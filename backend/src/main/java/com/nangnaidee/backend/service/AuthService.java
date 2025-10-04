@@ -1,9 +1,13 @@
 // src/main/java/com/nangnaidee/backend/service/AuthService.java
 package com.nangnaidee.backend.service;
 
+import com.nangnaidee.backend.config.JwtTokenProvider;
+import com.nangnaidee.backend.dto.LoginRequest;
+import com.nangnaidee.backend.dto.LoginResponse;
 import com.nangnaidee.backend.dto.RegisterRequest;
 import com.nangnaidee.backend.dto.RegisterResponse;
 import com.nangnaidee.backend.exception.EmailAlreadyExistsException;
+import com.nangnaidee.backend.exception.InvalidCredentialsException;
 import com.nangnaidee.backend.exception.InvalidRoleException;
 import com.nangnaidee.backend.model.Role;
 import com.nangnaidee.backend.model.User;
@@ -13,6 +17,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +30,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
 
     public RegisterResponse register(RegisterRequest request) {
@@ -49,14 +58,47 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
+        // คัดลอกออกมาก่อนค่อย map
+        List<String> roleCodes = new ArrayList<>(savedUser.getRoles())
+                .stream().map(Role::getCode).toList();
 
         return new RegisterResponse(
                 "ลงทะเบียนสำเร็จ",
                 new RegisterResponse.UserInfo(
                         savedUser.getId(),
                         savedUser.getEmail(),
-                        savedUser.getRoles().stream().map(Role::getCode).toList()
+                        roleCodes
                 )
+        );
+    }
+    // -------- NEW: LOGIN --------
+    public LoginResponse login(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new InvalidCredentialsException("อีเมลหรือรหัสผ่านไม่ถูกต้อง"));
+
+        if (!user.isActive()) {
+            throw new InvalidCredentialsException("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+        }
+
+        if (user.getPasswordHash() == null ||
+                !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            throw new InvalidCredentialsException("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+        }
+
+        List<String> roles = user.getRoles().stream().map(Role::getCode).toList();
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", user.getEmail());
+        claims.put("fullName", user.getFullName());
+        claims.put("roles", roles);
+
+        String token = jwtTokenProvider.generateToken(String.valueOf(user.getId()), claims);
+
+        return new LoginResponse(
+                token,
+                "Bearer",
+                jwtTokenProvider.getExpirationMillis(),
+                roles
         );
     }
 }

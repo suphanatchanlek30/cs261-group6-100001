@@ -6,6 +6,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -27,4 +30,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleGeneric(Exception ex) {
         return ResponseEntity.internalServerError().body("เกิดข้อผิดพลาดในระบบ: " + ex.getMessage());
     }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<?> handleInvalidCredentials(InvalidCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+    }
+
+    // (ออปชัน) จัดการ validation error สวยขึ้น
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleValidation(MethodArgumentNotValidException ex) {
+        String msg = ex.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(f -> f.getDefaultMessage())
+                .orElse("ข้อมูลไม่ถูกต้อง");
+        return ResponseEntity.badRequest().body(msg);
+    }
+
 }

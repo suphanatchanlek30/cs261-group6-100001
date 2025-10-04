@@ -11,36 +11,34 @@ import java.util.HashSet;
 import java.util.Set;
 
 
-@Entity
-@Table(name = "users")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = true)
+@Entity @Table(name = "users")
 public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
+    @ToString.Include
     private Integer id;
 
-
     @Column(nullable = false, unique = true, length = 255)
+    @EqualsAndHashCode.Include
+    @ToString.Include
     private String email;
-
 
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
-
     @Column(name = "full_name", length = 255)
+    @ToString.Include
     private String fullName;
-
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
-
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
-
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -48,5 +46,7 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<Role> roles = new HashSet<>();
 }
