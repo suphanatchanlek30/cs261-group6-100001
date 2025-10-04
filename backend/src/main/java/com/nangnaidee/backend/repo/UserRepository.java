@@ -1,4 +1,4 @@
-// repo/UserRepository.java
+// src/main/java/com/nangnaidee/backend/repo/UserRepository.java
 package com.nangnaidee.backend.repo;
 
 import com.nangnaidee.backend.model.User;
