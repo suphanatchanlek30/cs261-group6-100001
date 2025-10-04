@@ -5,28 +5,32 @@ import jakarta.persistence.*;
 import lombok.*;
 
 
+import java.util.HashSet;
 import java.util.Set;
 
 
-@Entity
-@Table(name = "roles")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = true)
+@Entity @Table(name = "roles")
 public class Role {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
+    @ToString.Include
     private Integer id;
 
-
     @Column(nullable = false, unique = true, length = 50)
+    @EqualsAndHashCode.Include
+    @ToString.Include
     private String code;
 
-
     @Column(nullable = false, length = 100)
+    @ToString.Include
     private String name;
 
-
     @ManyToMany(mappedBy = "roles")
-    private Set<User> users;
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<User> users = new HashSet<>();
 }

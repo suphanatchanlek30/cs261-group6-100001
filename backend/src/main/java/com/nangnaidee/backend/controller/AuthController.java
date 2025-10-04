@@ -1,6 +1,7 @@
 // src/main/java/com/nangnaidee/backend/controller/AuthController.java
 package com.nangnaidee.backend.controller;
 
+import com.nangnaidee.backend.dto.*;
 import com.nangnaidee.backend.dto.RegisterRequest;
 import com.nangnaidee.backend.dto.RegisterResponse;
 import com.nangnaidee.backend.service.AuthService;
@@ -23,5 +24,11 @@ public class AuthController {
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
         RegisterResponse response = authService.register(request);
         return ResponseEntity.status(201).body(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
     }
 }
