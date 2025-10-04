@@ -47,4 +47,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(msg);
     }
 
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<?> handleUnauthorized(UnauthorizedException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("ไม่ได้รับอนุญาต");
+    }
+
 }

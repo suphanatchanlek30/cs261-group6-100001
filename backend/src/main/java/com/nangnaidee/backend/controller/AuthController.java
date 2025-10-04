@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.nangnaidee.backend.dto.MeResponse;
 
 
 @RestController
@@ -29,6 +30,14 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<MeResponse> me(
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        MeResponse response = authService.me(authorization);
         return ResponseEntity.ok(response);
     }
 }
