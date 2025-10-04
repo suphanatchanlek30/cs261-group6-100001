@@ -52,4 +52,24 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("ไม่ได้รับอนุญาต");
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<?> handleForbidden(ForbiddenException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<?> handleBadRequest(BadRequestException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<?> handleNotFound(NotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<?> handleConflict(ConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
 }
