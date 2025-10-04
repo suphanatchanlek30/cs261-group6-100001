@@ -3,6 +3,7 @@ package com.nangnaidee.backend.controller;
 
 import com.nangnaidee.backend.dto.CreateLocationRequest;
 import com.nangnaidee.backend.dto.CreateLocationResponse;
+import com.nangnaidee.backend.dto.LocationDetailResponse;
 import com.nangnaidee.backend.dto.LocationListResponse;
 import com.nangnaidee.backend.service.LocationService;
 import com.nangnaidee.backend.service.LocationQueryService;
@@ -10,6 +11,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/locations")
@@ -38,5 +41,11 @@ public class LocationController {
     ) {
         LocationListResponse res = locationQueryService.search(q, near, radiusKm, page, size);
         return ResponseEntity.ok(res);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<LocationDetailResponse> getOne(@PathVariable("id") UUID id) {
+        LocationDetailResponse res = locationQueryService.getById(id);
+        return ResponseEntity.ok(res); // 200 OK
     }
 }

@@ -2,23 +2,29 @@
 
 package com.nangnaidee.backend.service;
 
+import com.nangnaidee.backend.dto.LocationDetailResponse;
 import com.nangnaidee.backend.dto.LocationListItem;
 import com.nangnaidee.backend.dto.LocationListResponse;
 import com.nangnaidee.backend.exception.BadRequestException;
+import com.nangnaidee.backend.exception.NotFoundException;
 import com.nangnaidee.backend.model.Location;
+import com.nangnaidee.backend.model.LocationUnit;
 import com.nangnaidee.backend.repo.LocationRepository;
+import com.nangnaidee.backend.repo.LocationUnitRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class LocationQueryService {
 
     private final LocationRepository locationRepository;
+    private final LocationUnitRepository locationUnitRepository;
 
     public LocationListResponse search(String q, String near, Double radiusKm, Integer page, Integer size) {
         int p = (page == null || page < 0) ? 0 : page;
@@ -70,5 +76,38 @@ public class LocationQueryService {
         } catch (NumberFormatException ex) {
             throw new BadRequestException("รูปแบบ near ต้องเป็นตัวเลข เช่น '18.79,98.98'");
         }
+    }
+
+    public LocationDetailResponse getById(UUID id) {
+        Location loc = locationRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("ไม่พบสถานที่"));
+
+        List<LocationUnit> units = locationUnitRepository.findByLocation_IdOrderByCodeAsc(id);
+
+        var unitItems = units.stream()
+                .map(u -> new LocationDetailResponse.UnitItem(
+                        u.getId(),
+                        u.getCode(),
+                        u.getName(),
+                        u.getImageUrl(),
+                        u.getShortDesc(),
+                        u.getCapacity(),
+                        u.getPriceHourly(),
+                        u.isActive()
+                )).toList();
+
+        return new LocationDetailResponse(
+                loc.getId(),
+                loc.getOwner().getId(),
+                loc.getName(),
+                loc.getDescription(),
+                loc.getAddressText(),
+                loc.getGeoLat(),
+                loc.getGeoLng(),
+                loc.getCoverImageUrl(),
+                loc.isActive(),
+                loc.getCreatedAt(),
+                unitItems
+        );
     }
 }
