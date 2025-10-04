@@ -9,6 +9,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.nangnaidee.backend.dto.UpdateLocationRequest;
+import com.nangnaidee.backend.service.LocationUpdateService;
 
 import java.util.UUID;
 
@@ -20,6 +22,7 @@ public class LocationController {
     private final LocationService locationService;
     private final LocationQueryService locationQueryService;
     private final LocationUnitService locationUnitService;
+    private final LocationUpdateService locationUpdateService;
 
     @PostMapping
     public ResponseEntity<CreateLocationResponse> create(
@@ -58,5 +61,16 @@ public class LocationController {
     ) {
         CreateUnitResponse res = locationUnitService.createUnit(authorization, locationId, request);
         return ResponseEntity.status(201).body(res);
+    }
+
+    // PATCH /api/locations/{id}
+    @PatchMapping("/{id}")
+    public ResponseEntity<LocationDetailResponse> patch(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody UpdateLocationRequest request
+    ) {
+        LocationDetailResponse res = locationUpdateService.patch(authorization, id, request);
+        return ResponseEntity.ok(res); // 200 OK – updated object
     }
 }
