@@ -1,6 +1,9 @@
 // src/main/java/com/nangnaidee/backend/service/AuthService.java
 package com.nangnaidee.backend.service;
 
+import com.nangnaidee.backend.dto.MeResponse;
+import com.nangnaidee.backend.exception.UnauthorizedException;
+import io.jsonwebtoken.JwtException;
 import com.nangnaidee.backend.config.JwtTokenProvider;
 import com.nangnaidee.backend.dto.LoginRequest;
 import com.nangnaidee.backend.dto.LoginResponse;
@@ -32,7 +35,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
-
+    // -------- REGISTER --------
     public RegisterResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException("อีเมลนี้ถูกใช้งานแล้ว");
@@ -71,7 +74,8 @@ public class AuthService {
                 )
         );
     }
-    // -------- NEW: LOGIN --------
+
+    // -------- LOGIN --------
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new InvalidCredentialsException("อีเมลหรือรหัสผ่านไม่ถูกต้อง"));
@@ -99,6 +103,34 @@ public class AuthService {
                 "Bearer",
                 jwtTokenProvider.getExpirationMillis(),
                 roles
+        );
+    }
+
+    // -------- ME --------
+    public MeResponse me(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+        Integer userId;
+        try {
+            userId = jwtTokenProvider.getUserId(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
+
+        // คัดลอก roles ออกมาก่อนเพื่อความปลอดภัยเวลา map
+        var roleCodes = new java.util.ArrayList<>(user.getRoles())
+                .stream().map(Role::getCode).toList();
+
+        return new MeResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFullName(),
+                roleCodes
         );
     }
 }

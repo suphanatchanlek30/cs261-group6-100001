@@ -1,6 +1,11 @@
 // src/main/java/com/nangnaidee/backend/config/JwtTokenProvider.java
 package com.nangnaidee.backend.config;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.io.Decoders;
+
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -45,5 +50,19 @@ public class JwtTokenProvider {
 
     public long getExpirationMillis() {
         return expirationMs;
+    }
+
+    public Claims parseClaims(String token) throws JwtException {
+        // ถ้า secret ของคุณเป็นสตริงธรรมดา ใช้ getBytes(); ถ้าเป็น base64 ให้ใช้ Decoders.BASE64.decode(...)
+        return Jwts.parserBuilder()
+                .setSigningKey(this.key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    public Integer getUserId(String token) throws JwtException {
+        Claims claims = parseClaims(token);
+        return Integer.valueOf(claims.getSubject()); // เราเก็บ userId ไว้ใน subject ตอน generate
     }
 }
