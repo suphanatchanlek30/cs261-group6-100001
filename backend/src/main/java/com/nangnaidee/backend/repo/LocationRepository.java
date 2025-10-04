@@ -3,9 +3,16 @@
 package com.nangnaidee.backend.repo;
 
 import com.nangnaidee.backend.model.Location;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;
 
-public interface LocationRepository extends JpaRepository<Location, UUID> {
+public interface LocationRepository extends JpaRepository<Location, UUID>, LocationRepositoryCustom {
+
+    // สำหรับโหมด q-only (ไม่ near): ค้นหาชื่อหรือที่อยู่
+    Page<Location> findByNameContainingIgnoreCaseOrAddressTextContainingIgnoreCase(
+            String name, String address, Pageable pageable
+    );
 }
