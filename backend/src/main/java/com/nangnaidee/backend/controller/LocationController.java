@@ -1,12 +1,10 @@
 // src/main/java/com/nangnaidee/backend/controller/LocationController.java
 package com.nangnaidee.backend.controller;
 
-import com.nangnaidee.backend.dto.CreateLocationRequest;
-import com.nangnaidee.backend.dto.CreateLocationResponse;
-import com.nangnaidee.backend.dto.LocationDetailResponse;
-import com.nangnaidee.backend.dto.LocationListResponse;
+import com.nangnaidee.backend.dto.*;
 import com.nangnaidee.backend.service.LocationService;
 import com.nangnaidee.backend.service.LocationQueryService;
+import com.nangnaidee.backend.service.LocationUnitService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +19,7 @@ public class LocationController {
 
     private final LocationService locationService;
     private final LocationQueryService locationQueryService;
+    private final LocationUnitService locationUnitService;
 
     @PostMapping
     public ResponseEntity<CreateLocationResponse> create(
@@ -43,9 +42,21 @@ public class LocationController {
         return ResponseEntity.ok(res);
     }
 
+    // ค้นหาด้วย id
     @GetMapping("/{id}")
     public ResponseEntity<LocationDetailResponse> getOne(@PathVariable("id") UUID id) {
         LocationDetailResponse res = locationQueryService.getById(id);
         return ResponseEntity.ok(res); // 200 OK
+    }
+
+    // ---------- เพิ่มยูนิต ----------
+    @PostMapping("/{locationId}/units")
+    public ResponseEntity<CreateUnitResponse> createUnit(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("locationId") UUID locationId,
+            @Valid @RequestBody CreateUnitRequest request
+    ) {
+        CreateUnitResponse res = locationUnitService.createUnit(authorization, locationId, request);
+        return ResponseEntity.status(201).body(res);
     }
 }
