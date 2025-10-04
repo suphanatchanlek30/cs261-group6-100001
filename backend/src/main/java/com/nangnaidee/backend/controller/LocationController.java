@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.nangnaidee.backend.dto.UpdateLocationRequest;
 import com.nangnaidee.backend.service.LocationUpdateService;
+import com.nangnaidee.backend.service.LocationDeleteService;
 
 import java.util.UUID;
 
@@ -23,6 +24,7 @@ public class LocationController {
     private final LocationQueryService locationQueryService;
     private final LocationUnitService locationUnitService;
     private final LocationUpdateService locationUpdateService;
+    private final LocationDeleteService locationDeleteService;
 
     @PostMapping
     public ResponseEntity<CreateLocationResponse> create(
@@ -72,5 +74,15 @@ public class LocationController {
     ) {
         LocationDetailResponse res = locationUpdateService.patch(authorization, id, request);
         return ResponseEntity.ok(res); // 200 OK – updated object
+    }
+
+    // -------- DELETE /api/locations/{id} --------
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiMessageResponse> delete(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("id") UUID id
+    ) {
+        locationDeleteService.delete(authorization, id);
+        return ResponseEntity.ok(new ApiMessageResponse("ลบสถานที่สำเร็จ"));
     }
 }
