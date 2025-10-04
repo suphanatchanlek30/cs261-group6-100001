@@ -1,15 +1,17 @@
+/* data.sql */
 /* ROLES */
-IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE code='ADMIN')
-  INSERT INTO dbo.roles(code,name) VALUES ('ADMIN','Administrator');
-IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE code='HOST')
-  INSERT INTO dbo.roles(code,name) VALUES ('HOST','Host');
-IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE code='USER')
-  INSERT INTO dbo.roles(code,name) VALUES ('USER','End User');
+INSERT INTO dbo.roles(code, name)
+SELECT * FROM (VALUES
+                   ('ADMIN','Administrator'),
+                   ('HOST','Host'),
+                   ('USER','End User')
+              ) AS r(code,name)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.roles WHERE code=r.code);
 
-/* ADMIN USER (GUID คงที่) — แก้รหัสผ่านจริงก่อนใช้โปรดักชัน */
+/* ADMIN USER — ใช้ INT IDENTITY */
 IF NOT EXISTS (SELECT 1 FROM dbo.users WHERE email='admin@yourapp.com')
-  INSERT INTO dbo.users(id,email,password_hash,full_name,is_active)
-  VALUES ('11111111-1111-1111-1111-111111111111','admin@yourapp.com','password','Platform Admin',1);
+  INSERT INTO dbo.users(email,password_hash,full_name,is_active)
+  VALUES ('admin@yourapp.com','password','Platform Admin',1);
 
 /* MAP ADMIN -> ROLE ADMIN */
 IF NOT EXISTS (

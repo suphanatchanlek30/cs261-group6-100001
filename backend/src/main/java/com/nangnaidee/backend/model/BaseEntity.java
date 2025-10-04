@@ -1,3 +1,4 @@
+// src/main/java/com/nangnaidee/backend/model/BaseEntity.java
 package com.nangnaidee.backend.model;
 
 import jakarta.persistence.*;
