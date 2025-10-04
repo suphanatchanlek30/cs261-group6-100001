@@ -1,19 +1,22 @@
 package com.nangnaidee.backend.service;
 
-import com.nangnaidee.backend.dto.CreateBookingRequest;
-import com.nangnaidee.backend.dto.CreateBookingResponse;
-import com.nangnaidee.backend.dto.MeResponse;
+import com.nangnaidee.backend.dto.*;
 import com.nangnaidee.backend.exception.NotFoundException;
 import com.nangnaidee.backend.model.Booking;
 import com.nangnaidee.backend.model.LocationUnit;
 import com.nangnaidee.backend.repo.BookingRepository;
 import com.nangnaidee.backend.repo.LocationUnitRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,6 +64,41 @@ public class BookingService {
                 req.getHours(),
                 total,
                 booking.getStatus()
+        );
+    }
+
+    public BookingListResponse getMyBookings(String authorizationHeader, String status, int page, int size) {
+        MeResponse me = authService.me(authorizationHeader);
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Booking> bookingPage;
+        
+        if (status != null && !status.trim().isEmpty()) {
+            bookingPage = bookingRepository.findByUserIdAndStatus(me.getId(), status, pageable);
+        } else {
+            bookingPage = bookingRepository.findByUserId(me.getId(), pageable);
+        }
+        
+        List<BookingListItem> items = bookingPage.getContent().stream()
+                .map(booking -> new BookingListItem(
+                        booking.getId(),
+                        booking.getLocationUnitId(),
+                        booking.getStartTime(),
+                        booking.getEndTime(),
+                        booking.getHours(),
+                        booking.getTotal(),
+                        booking.getStatus(),
+                        booking.getBookingCode(),
+                        booking.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
+        
+        return new BookingListResponse(
+                items,
+                bookingPage.getNumber(),
+                bookingPage.getSize(),
+                bookingPage.getTotalElements(),
+                bookingPage.getTotalPages()
         );
     }
 }
