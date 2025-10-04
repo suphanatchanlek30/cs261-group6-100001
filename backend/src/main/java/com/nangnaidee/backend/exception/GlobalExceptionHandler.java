@@ -52,4 +52,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("ไม่ได้รับอนุญาต");
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<?> handleForbidden(ForbiddenException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
+    }
+
 }
