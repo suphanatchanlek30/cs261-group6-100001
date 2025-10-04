@@ -15,5 +15,31 @@ public class Booking {
     @Column(name = "id", columnDefinition = "uniqueidentifier")
     @EqualsAndHashCode.Include
     private UUID id;
-    // ไม่ต้องใส่ฟิลด์อื่นๆ ก็ได้ เพราะเราใช้แค่นับ (COUNT)
+
+    @Column(name = "user_id", nullable = false)
+    private Integer userId;
+
+    @Column(name = "location_unit_id", columnDefinition = "uniqueidentifier", nullable = false)
+    private UUID locationUnitId;
+
+    @Column(name = "start_time", nullable = false)
+    private java.time.LocalDateTime startTime;
+
+    @Column(name = "end_time", nullable = false)
+    private java.time.LocalDateTime endTime;
+
+    @Column(name = "hours", nullable = false)
+    private int hours;
+
+    @Column(name = "total", nullable = false, precision = 10, scale = 2)
+    private java.math.BigDecimal total;
+
+    @Column(name = "status", nullable = false, length = 20)
+    private String status;
+
+    @Column(name = "booking_code", length = 32)
+    private String bookingCode;
+
+    @Column(name = "created_at", nullable = false)
+    private java.time.LocalDateTime createdAt;
 }
