@@ -131,3 +131,11 @@ CREATE TABLE dbo.reviews (
                              comment NVARCHAR(1000) NULL,
                              created_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME()
 );
+
+-- LOCATIONS
+ALTER TABLE dbo.locations
+    ADD cover_image_public_id NVARCHAR(300) NULL;
+
+-- LOCATION_UNITS
+ALTER TABLE dbo.location_units
+    ADD image_public_id NVARCHAR(300) NULL;
