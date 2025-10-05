@@ -1,6 +1,9 @@
 // app/(auth)/login/page.jsx
 
+import LoginSection from "@/components/auth/login/LoginSection";
+
 export default function LoginPage() {
-    // ดึงเป็น components มาใช้
-    return <h1>Login Page</h1>;
+    return (
+        <LoginSection/>
+    );
 }
