@@ -11,14 +11,14 @@ import java.util.UUID;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "location_units")
+@Table(name = "location_units", schema = "dbo") // ✅ แนะนำให้ระบุ schema
 public class LocationUnit {
 
     @Id
     @Column(name = "id", columnDefinition = "uniqueidentifier")
     @EqualsAndHashCode.Include
     @ToString.Include
-    private UUID id; // เราจะ set UUID ตอนสร้าง (POST /units), เส้นนี้เป็นแค่ read
+    private UUID id; // ถ้าไม่ได้เซ็ต จะ gen ใน @PrePersist
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "location_id", nullable = false)
@@ -35,6 +35,10 @@ public class LocationUnit {
     @Column(name = "image_url", length = 600)
     private String imageUrl;
 
+    // ✅ เก็บ publicId ของ Cloudinary
+    @Column(name = "image_public_id", length = 300)
+    private String imagePublicId;
+
     @Column(name = "short_desc", length = 300)
     private String shortDesc;
 
@@ -46,4 +50,9 @@ public class LocationUnit {
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
+
+    @PrePersist
+    public void prePersist() {
+        if (id == null) id = UUID.randomUUID();
+    }
 }
