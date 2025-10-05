@@ -14,6 +14,7 @@ import com.nangnaidee.backend.model.Location;
 import com.nangnaidee.backend.model.LocationUnit;
 import com.nangnaidee.backend.model.Role;
 import com.nangnaidee.backend.model.User;
+import com.nangnaidee.backend.repo.BookingRepository;
 import com.nangnaidee.backend.repo.LocationRepository;
 import com.nangnaidee.backend.repo.LocationUnitRepository;
 import com.nangnaidee.backend.repo.UserRepository;
@@ -33,6 +34,7 @@ public class LocationUnitService {
     private final UserRepository userRepository;
     private final LocationRepository locationRepository;
     private final LocationUnitRepository locationUnitRepository;
+    private final BookingRepository bookingRepository;
 
     public CreateUnitResponse createUnit(String authorizationHeader, UUID locationId, CreateUnitRequest req) {
         // 1) ตรวจโทเคน
@@ -153,5 +155,54 @@ public class LocationUnitService {
                 saved.getPriceHourly(),
                 saved.isActive()
         );
+    }
+
+    public void deleteUnit(String authorizationHeader, UUID unitId) {
+        // 1) ตรวจโทเคน
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+
+        Integer actorId;
+        try {
+            actorId = jwtTokenProvider.getUserId(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+
+        User actor = userRepository.findById(actorId)
+                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
+
+        // 2) หา unit ที่ต้องการลบ
+        LocationUnit unit = locationUnitRepository.findById(unitId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบยูนิต"));
+
+        // 3) ตรวจสอบสิทธิ์ - ต้องเป็น owner หรือ ADMIN
+        Set<String> roleCodes = actor.getRoles().stream()
+                .map(Role::getCode)
+                .collect(Collectors.toSet());
+
+        boolean isAdmin = roleCodes.contains("ADMIN");
+        boolean isOwner = unit.getLocation().getOwner().getId().equals(actorId);
+
+        if (!isAdmin && !isOwner) {
+            throw new ForbiddenException("คุณไม่มีสิทธิ์ลบยูนิตนี้");
+        }
+
+        // 4) ตรวจสอบการจองที่มีอยู่
+        long activeBookings = bookingRepository.countActiveBookingsByLocationUnitId(unitId);
+        long totalBookings = bookingRepository.countAllBookingsByLocationUnitId(unitId);
+        
+        if (activeBookings > 0) {
+            throw new ConflictException("ไม่สามารถลบยูนิตได้เนื่องจากมีการจองที่มีผลอยู่ " + activeBookings + " รายการ");
+        }
+        
+        if (totalBookings > 0) {
+            throw new ConflictException("ไม่สามารถลบยูนิตได้เนื่องจากมีประวัติการจองทั้งหมด " + totalBookings + " รายการ (รวมที่ยกเลิกและหมดอายุ)");
+        }
+
+        // 5) ลบยูนิต
+        locationUnitRepository.delete(unit);
     }
 }
