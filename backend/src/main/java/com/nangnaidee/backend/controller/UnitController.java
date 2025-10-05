@@ -24,4 +24,12 @@ public class UnitController {
         UpdateUnitResponse response = locationUnitService.updateUnit(authorization, id, request);
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUnit(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable("id") UUID id) {
+        locationUnitService.deleteUnit(authorization, id);
+        return ResponseEntity.noContent().build(); // 204 No Content
+    }
 }
