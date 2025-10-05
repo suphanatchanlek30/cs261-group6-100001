@@ -64,7 +64,7 @@ export default function LoginForm() {
 
       {/* ลิงก์ไปสมัครสมาชิก */}
       <p className="text-center text-sm text-gray-600 mt-2">
-        New account?{" "}
+        New account ?{" "}
         <a href="/register" className="text-[#1800ad] hover:underline">
           Register here.
         </a>
