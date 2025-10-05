@@ -11,4 +11,5 @@ public class PatchPaymentResponse {
     private String paymentStatus;
     private String bookingStatus;
     private UUID bookingId;
+    private String bookingCode;
 }

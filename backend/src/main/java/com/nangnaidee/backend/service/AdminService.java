@@ -161,7 +161,8 @@ public class AdminService {
         return new PatchPaymentResponse(
                 payment.getStatus(),
                 booking.getStatus(),
-                booking.getId()
+                booking.getId(),
+                booking.getBookingCode()
         );
     }
 
