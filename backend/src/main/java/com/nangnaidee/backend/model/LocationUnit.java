@@ -25,6 +25,10 @@ public class LocationUnit {
     @ToString.Exclude
     private Location location;
 
+    // Add direct access to location_id for easier querying
+    @Column(name = "location_id", nullable = false, insertable = false, updatable = false)
+    private UUID locationId;
+
     @Column(name = "code", nullable = false, length = 100)
     @ToString.Include
     private String code;
