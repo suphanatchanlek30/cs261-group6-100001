@@ -1,6 +1,7 @@
 package com.nangnaidee.backend.service;
 
 import com.nangnaidee.backend.dto.*;
+import com.nangnaidee.backend.exception.ForbiddenException;
 import com.nangnaidee.backend.exception.NotFoundException;
 import com.nangnaidee.backend.model.Booking;
 import com.nangnaidee.backend.model.LocationUnit;
@@ -100,5 +101,52 @@ public class BookingService {
                 bookingPage.getTotalElements(),
                 bookingPage.getTotalPages()
         );
+    }
+
+    public Booking getBookingDetail(String authorizationHeader, UUID bookingId) {
+        MeResponse me = authService.me(authorizationHeader);
+        
+        // Find booking by ID
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบการจอง"));
+        
+        // Check authorization - must be owner or ADMIN
+        boolean isAdmin = me.getRoles().contains("ADMIN");
+        boolean isOwner = booking.getUserId().equals(me.getId());
+        
+        if (!isAdmin && !isOwner) {
+            throw new ForbiddenException("คุณไม่มีสิทธิ์ดูการจองนี้");
+        }
+        
+        return booking;
+    }
+
+    public CancelBookingResponse cancelBooking(String authorizationHeader, UUID bookingId, CancelBookingRequest request) {
+        MeResponse me = authService.me(authorizationHeader);
+        
+        // Find booking by ID
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบการจอง"));
+        
+        // Check authorization - must be owner
+        if (!booking.getUserId().equals(me.getId())) {
+            throw new ForbiddenException("คุณไม่มีสิทธิ์ยกเลิกการจองนี้");
+        }
+        
+        // Check if booking can be cancelled (only non-CONFIRMED can be cancelled)
+        String currentStatus = booking.getStatus();
+        if ("CONFIRMED".equals(currentStatus)) {
+            throw new IllegalArgumentException("ไม่สามารถยกเลิกการจองที่ได้รับการยืนยันแล้ว");
+        }
+        
+        if ("CANCELLED".equals(currentStatus)) {
+            throw new IllegalArgumentException("การจองนี้ถูกยกเลิกแล้ว");
+        }
+        
+        // Update booking status to CANCELLED
+        booking.setStatus("CANCELLED");
+        bookingRepository.save(booking);
+        
+        return new CancelBookingResponse("CANCELLED");
     }
 }
