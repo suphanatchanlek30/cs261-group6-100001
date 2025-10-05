@@ -5,10 +5,7 @@ import com.nangnaidee.backend.dto.GetPaymentItemDto;
 import com.nangnaidee.backend.dto.GetPaymentResponse;
 import com.nangnaidee.backend.dto.PatchPaymentRequest;
 import com.nangnaidee.backend.dto.PatchPaymentResponse;
-import com.nangnaidee.backend.exception.NotFoundException;
-import com.nangnaidee.backend.exception.ForbiddenException;
-import com.nangnaidee.backend.exception.UnauthorizedException;
-import com.nangnaidee.backend.exception.UnprocessableEntityException;
+import com.nangnaidee.backend.exception.*;
 import com.nangnaidee.backend.model.Payment;
 import com.nangnaidee.backend.model.Role;
 import com.nangnaidee.backend.model.User;
@@ -23,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import com.nangnaidee.backend.repo.BookingRepository;
 
 
 import java.util.List;
@@ -38,6 +36,7 @@ public class AdminService {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
+    private final BookingRepository bookingRepository;
 
     @Transactional
     public GetPaymentResponse getPayments(String authorizationHeader, String status, int page, int size) {
@@ -98,14 +97,14 @@ public class AdminService {
                 paymentsPage.getTotalElements());
     }
 
+    // AdminService.java
+    @Transactional
     public PatchPaymentResponse approvePayment(String authorizationHeader, UUID paymentId, PatchPaymentRequest req) {
-
-        // 1) Authn: ต้องมี Bearer token
+        // --- Authn ---
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
         }
         String token = authorizationHeader.substring("Bearer ".length()).trim();
-
         Integer userId;
         try {
             userId = jwtTokenProvider.getUserId(token);
@@ -116,29 +115,61 @@ public class AdminService {
         User admin = userRepository.findById(userId)
                 .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
 
-        Set<String> roleCodes = admin.getRoles().stream()
-                .map(Role::getCode)
-                .collect(Collectors.toSet());
+        // --- Authz ---
+        Set<String> roleCodes = admin.getRoles().stream().map(Role::getCode).collect(Collectors.toSet());
         if (!roleCodes.contains("ADMIN")) {
             throw new ForbiddenException("ต้องเป็น ADMIN เท่านั้น");
+        }
+
+        // --- Validate request status ---
+        String reqStatus = (req.getStatus() == null ? "" : req.getStatus().trim().toUpperCase());
+        if (!reqStatus.equals("APPROVED") && !reqStatus.equals("REJECTED")) {
+            // ตามสเป็กอยากให้เป็น 422
+            throw new UnprocessableEntityException("status ต้องเป็น APPROVED หรือ REJECTED");
         }
 
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new NotFoundException("ไม่พบรายการชำระเงินนี้ในระบบ"));
 
-        if (payment.getStatus().equals("APPROVED") || payment.getStatus().equals("REJECTED")) {
-            throw new UnprocessableEntityException("ไม่สามารถแก้ไข Payment ที่อนุมัติหรือปฏิเสธแล้ว");
+        // --- Conflict: already reviewed ---
+        if ("APPROVED".equals(payment.getStatus()) || "REJECTED".equals(payment.getStatus())) {
+            // ตามสเป็ก: 409 already reviewed
+            throw new ConflictException("รายการนี้ถูกทบทวนแล้ว");
         }
 
-        payment.setStatus(req.getStatus());
+        // --- Update payment ---
+        payment.setStatus(reqStatus);
+        payment.setReviewedBy(admin);
+        payment.setReviewedAt(java.time.LocalDateTime.now());
 
-        Payment savedPayment = paymentRepository.save(payment);
+        // --- Update booking status ตามผลการรีวิว ---
+        var booking = payment.getBooking();
+        if ("APPROVED".equals(reqStatus)) {
+            booking.setStatus("CONFIRMED"); // ถ้าอยากได้ PENDING_REVIEW ให้เปลี่ยนตรงนี้
+            // (ออปชัน) สร้าง bookingCode ถ้ายังไม่มี
+            if (booking.getBookingCode() == null || booking.getBookingCode().isBlank()) {
+                booking.setBookingCode(generateBookingCode(booking.getId()));
+            }
+        } else { // REJECTED
+            booking.setStatus("HOLD"); // หรือจะคงค่าเดิมก็ได้
+        }
+
+        // --- Save ทั้งสองฝั่ง ---
+        paymentRepository.save(payment);
+        bookingRepository.save(booking);
 
         return new PatchPaymentResponse(
-                savedPayment.getStatus(),
-                savedPayment.getBooking().getStatus(),
-                savedPayment.getBooking().getId());
-
+                payment.getStatus(),
+                booking.getStatus(),
+                booking.getId()
+        );
     }
-    
+
+    // helper สั้น ๆ สำหรับ code (ออปชัน)
+    private String generateBookingCode(UUID bookingId) {
+        // ตัวอย่างง่าย ๆ: BK-6ตัวแรกของ UUID (คุณจะใช้ Random/Sequence ก็ได้)
+        return "BK-" + bookingId.toString().replace("-", "").substring(0, 6).toUpperCase();
+    }
+
+
 }
