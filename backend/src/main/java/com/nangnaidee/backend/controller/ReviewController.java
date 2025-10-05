@@ -1,5 +1,6 @@
 package com.nangnaidee.backend.controller;
 
+import com.nangnaidee.backend.dto.ApiMessageResponse;
 import com.nangnaidee.backend.dto.CreateReviewRequest;
 import com.nangnaidee.backend.dto.CreateReviewResponse;
 import com.nangnaidee.backend.dto.ReviewListResponse;
@@ -38,10 +39,10 @@ public class ReviewController {
     }
     
     @DeleteMapping("/admin/reviews/{id}")
-    public ResponseEntity<Void> deleteReview(
+    public ResponseEntity<ApiMessageResponse> deleteReview(
             @RequestHeader("Authorization") String authorization,
             @PathVariable("id") UUID id) {
         reviewService.deleteReview(authorization, id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new ApiMessageResponse("ลบรีวิวสำเร็จ"));
     }
 }
