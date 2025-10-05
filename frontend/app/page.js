@@ -1,8 +1,6 @@
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <div>
-      <h1>Welcome to NangNaiDee</h1>
-    </div>
-  );
+  // Server component redirect to the login route
+  redirect('/login');
 }
