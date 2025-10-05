@@ -9,22 +9,18 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
-
 @ControllerAdvice
 public class GlobalExceptionHandler {
-
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<?> handleEmailExists(EmailAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 
-
     @ExceptionHandler(InvalidRoleException.class)
     public ResponseEntity<?> handleInvalidRole(InvalidRoleException ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());
     }
-
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGeneric(Exception ex) {
@@ -70,6 +66,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<?> handleConflict(ConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(UnprocessableEntityException.class)
+    public ResponseEntity<?> handleUnprocessableEntity(UnprocessableEntityException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(ex.getMessage());
     }
 
 }
