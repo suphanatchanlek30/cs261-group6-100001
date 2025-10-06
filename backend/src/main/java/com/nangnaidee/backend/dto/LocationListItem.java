@@ -1,4 +1,5 @@
 // src/main/java/com/nangnaidee/backend/dto/LocationListItem.java
+
 package com.nangnaidee.backend.dto;
 
 import lombok.AllArgsConstructor;

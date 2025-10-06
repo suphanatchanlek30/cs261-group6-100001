@@ -1,4 +1,5 @@
 // src/main/java/com/nangnaidee/backend/service/UnitAvailabilityService.java
+
 package com.nangnaidee.backend.service;
 
 import com.nangnaidee.backend.dto.OccupiedSlotsResponse;

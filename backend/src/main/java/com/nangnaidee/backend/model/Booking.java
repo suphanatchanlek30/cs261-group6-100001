@@ -1,4 +1,5 @@
 // src/main/java/com/nangnaidee/backend/model/Booking.java
+
 package com.nangnaidee.backend.model;
 
 import jakarta.persistence.*;
