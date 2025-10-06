@@ -88,7 +88,7 @@ public class LocationUnitService {
         unit.setActive(true);
 
         LocationUnit saved = locationUnitRepository.save(unit);
-        return new CreateUnitResponse(saved.getId());
+        return new CreateUnitResponse("เพิ่มยูนิตสำเร็จ", saved.getId());
     }
 
     public UpdateUnitResponse updateUnit(String authorizationHeader, UUID unitId, UpdateUnitRequest req) {
