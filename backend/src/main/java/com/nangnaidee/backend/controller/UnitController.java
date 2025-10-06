@@ -2,6 +2,7 @@
 
 package com.nangnaidee.backend.controller;
 
+import com.nangnaidee.backend.dto.ApiMessageResponse;
 import com.nangnaidee.backend.dto.OccupiedSlotsResponse;
 import com.nangnaidee.backend.dto.UpdateUnitRequest;
 import com.nangnaidee.backend.dto.UpdateUnitResponse;
@@ -10,7 +11,6 @@ import com.nangnaidee.backend.service.LocationUnitService;
 import com.nangnaidee.backend.service.UnitAvailabilityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,11 +35,11 @@ public class UnitController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUnit(
+    public ResponseEntity<ApiMessageResponse> deleteUnit(
             @RequestHeader("Authorization") String authorization,
             @PathVariable("id") UUID id) {
         locationUnitService.deleteUnit(authorization, id);
-        return ResponseEntity.noContent().build(); // 204 No Content
+        return ResponseEntity.ok(new com.nangnaidee.backend.dto.ApiMessageResponse("ลบยูนิตสำเร็จ")); // 204 No Content
     }
 
     // ---- NEW: Public GET /api/units/{unitId}/occupied ----
