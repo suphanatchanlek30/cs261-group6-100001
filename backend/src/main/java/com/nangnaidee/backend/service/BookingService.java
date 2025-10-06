@@ -3,6 +3,7 @@
 package com.nangnaidee.backend.service;
 
 import com.nangnaidee.backend.dto.*;
+import com.nangnaidee.backend.exception.BadRequestException;
 import com.nangnaidee.backend.exception.ForbiddenException;
 import com.nangnaidee.backend.exception.NotFoundException;
 import com.nangnaidee.backend.model.Booking;
@@ -32,10 +33,10 @@ public class BookingService {
         // validate นาทีต้องเป็น 0
         OffsetDateTime start = req.getStartTime();
         if (start.getMinute() != 0 || start.getSecond() != 0 || start.getNano() != 0) {
-            throw new IllegalArgumentException("startTime นาทีต้องเป็น 0 (เช่น 13:00:00)");
+            throw new BadRequestException("เวลาเริ่มต้นต้องเป็นจุดเต็มชั่วโมง เช่น 13:00:00");
         }
         if (req.getHours() < 1) {
-            throw new IllegalArgumentException("hours ต้องอย่างน้อย 1");
+            throw new BadRequestException("จำนวนชั่วโมงต้องอย่างน้อย 1 ชั่วโมง");
         }
 
         LocationUnit unit = unitRepository.findById(req.getUnitId())

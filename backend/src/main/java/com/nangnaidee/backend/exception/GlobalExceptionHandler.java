@@ -2,6 +2,7 @@
 
 package com.nangnaidee.backend.exception;
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -12,7 +13,11 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import org.springframework.http.converter.HttpMessageNotReadableException;
+
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.UUID;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -125,6 +130,27 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<?> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<?> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        String nice = "ข้อมูล JSON ไม่ถูกต้อง";
+        Throwable cause = ex.getMostSpecificCause();
+
+        if (cause instanceof InvalidFormatException ife) {
+            Class<?> target = ife.getTargetType();
+            if (target == UUID.class) {
+                // ระบุตรง ๆ ว่าฟิลด์ UUID ไม่ถูกต้อง
+                nice = "unitId ต้องเป็น UUID รูปแบบที่ถูกต้อง เช่น 123e4567-e89b-12d3-a456-426614174000";
+            } else if (target == OffsetDateTime.class) {
+                nice = "startTime ต้องเป็นรูปแบบ ISO-8601 เช่น 2025-10-10T13:00:00+07:00 หรือใช้ Z (UTC)";
+            } else {
+                // เผื่อ field อื่น ๆ
+                nice = "รูปแบบข้อมูลไม่ถูกต้องสำหรับฟิลด์ชนิด " + target.getSimpleName();
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(nice);
     }
 
 }
