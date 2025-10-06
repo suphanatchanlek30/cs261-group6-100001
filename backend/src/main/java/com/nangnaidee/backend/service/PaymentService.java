@@ -115,6 +115,13 @@ public class PaymentService {
             throw new ForbiddenException("คุณไม่ใช่เจ้าของ Booking นี้");
         }
 
+        String url = req.getProofUrl().trim();
+        try {
+            new java.net.URL(url); // เช็คว่าเป็น URL รูปแบบถูก
+        } catch (Exception e) {
+            throw new BadRequestException("รูปแบบ URL ไม่ถูกต้อง");
+        }
+
         payment.setProofUrl(req.getProofUrl());
         Payment savedPayment = paymentRepository.save(payment);
 

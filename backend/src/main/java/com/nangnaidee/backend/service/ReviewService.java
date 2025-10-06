@@ -77,7 +77,7 @@ public class ReviewService {
         
         reviewRepository.save(review);
         
-        return new CreateReviewResponse(review.getId());
+        return new CreateReviewResponse(review.getId(), "รีวิวสำเร็จแล้ว");
     }
     
     public ReviewListResponse getLocationReviews(UUID locationId, Integer minRating, int page, int size) {
