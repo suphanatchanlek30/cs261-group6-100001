@@ -1,3 +1,5 @@
+// src/main/java/com/nangnaidee/backend/dto/CancelBookingResponse.java
+
 package com.nangnaidee.backend.dto;
 
 /**
