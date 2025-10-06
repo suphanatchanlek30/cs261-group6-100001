@@ -1,4 +1,4 @@
-/* schema.sql */
+/* src/main/resources/schema.sql */
 -- ROLES
 CREATE TABLE dbo.roles (
                            id INT IDENTITY PRIMARY KEY,

@@ -1,4 +1,4 @@
-/* data.sql */
+/* src/main/resources/data.sql */
 /* ROLES */
 INSERT INTO dbo.roles(code, name)
 SELECT * FROM (VALUES
