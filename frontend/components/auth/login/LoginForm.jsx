@@ -2,17 +2,57 @@
 
 "use client";
 
-// ฟอร์ม Login ที่จะเชื่อม API จริงในภายหลัง
+import { loginservice } from "@/services/authService";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { setToken } from "@/utils/authClient";
 
 export default function LoginForm({ showRegisterLink = true }) {
+  const router = useRouter();
+  const search = useSearchParams();
+  const nextPath = search.get("next") || "/home"; // กลับไป path เดิมหลัง login
+  const [okMsg, setOkMsg] = useState("");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: เรียก API Login ของ Backend ที่คุณทำไว้ เช่น /api/auth/login
-    console.log({ email, password });
+    setError("");
+    setLoading(true);
+    setOkMsg("");
+
+    try {
+      const res = await loginservice({ email, password });
+      if (!res.ok) {
+        setError(res.message || "เข้าสู่ระบบล้มเหลว");
+        return;
+      }
+
+      // เก็บ token (ถ้าคุณยังใช้ localStorage)
+      if (res.token) {
+        localStorage.setItem("token", res.token);
+      }
+
+      // ดึง token จาก response ตามที่ backend ส่งมา
+      const token = res.token || res.accessToken || res.data?.token || res.data?.accessToken;
+      if (token) {
+        setToken(token); // trigger "auth-changed" ให้ Navbar อัปเดต
+      }
+
+      // ไปหน้า home
+      setOkMsg("เข้าสู่ระบบสำเร็จ! กำลังพาไปหน้าหลัก...");
+      // ไปหน้า login (อาจพก email ไปเติมในฟอร์ม)
+      setTimeout(() => router.replace(nextPath), 700);
+
+    } catch (err) {
+      setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,7 +85,7 @@ export default function LoginForm({ showRegisterLink = true }) {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        
+
         {/* ลืมรหัสผ่าน */}
         {/* <div className="text-right mt-1">
           <a href="#" className="text-sm text-[#1800ad] hover:underline">
@@ -54,12 +94,26 @@ export default function LoginForm({ showRegisterLink = true }) {
         </div> */}
       </div>
 
+      {/* Error */}
+      {error && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
+          {error}
+        </div>
+      )}
+      {/* Ok message */}
+      {okMsg && (
+        <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md p-2">
+          {okMsg}
+        </div>
+      )}
+
       {/* ปุ่ม Login */}
       <button
         type="submit"
         className="w-full bg-[#1800ad] hover:bg-[#1F0C48FF] text-white py-2 rounded-lg text-lg font-medium mt-4"
+        disabled={loading}
       >
-        Sign In
+        {loading ? "Signing in..." : "Sign In"}
       </button>
 
       {/* ลิงก์ไปสมัครสมาชิก (โชว์เฉพาะถ้าเปิดใช้งาน) */}
