@@ -83,6 +83,6 @@ public class LocationService {
         // isActive = true, createdAt = now (ค่า default ใน entity)
 
         Location saved = locationRepository.save(loc);
-        return new CreateLocationResponse(saved.getId());
+        return new CreateLocationResponse("สร้างสถานที่สำเร็จ", saved.getId());
     }
 }

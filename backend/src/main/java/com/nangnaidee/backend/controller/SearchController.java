@@ -1,3 +1,5 @@
+// src/main/java/com/nangnaidee/backend/controller/SearchController.java
+
 package com.nangnaidee.backend.controller;
 
 import com.nangnaidee.backend.dto.AvailabilitySearchResponse;

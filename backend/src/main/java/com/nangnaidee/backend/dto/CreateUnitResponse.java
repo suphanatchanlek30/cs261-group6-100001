@@ -10,5 +10,6 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 public class CreateUnitResponse {
+    private String message;
     private UUID id;
 }

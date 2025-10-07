@@ -1,3 +1,5 @@
+// src/main/java/com/nangnaidee/backend/service/PaymentService.java
+
 package com.nangnaidee.backend.service;
 
 import com.nangnaidee.backend.config.JwtTokenProvider;
@@ -111,6 +113,13 @@ public class PaymentService {
         Booking booking = payment.getBooking();
         if (booking.getUserId() == null || !booking.getUserId().equals(userId)) {
             throw new ForbiddenException("คุณไม่ใช่เจ้าของ Booking นี้");
+        }
+
+        String url = req.getProofUrl().trim();
+        try {
+            new java.net.URL(url); // เช็คว่าเป็น URL รูปแบบถูก
+        } catch (Exception e) {
+            throw new BadRequestException("รูปแบบ URL ไม่ถูกต้อง");
         }
 
         payment.setProofUrl(req.getProofUrl());

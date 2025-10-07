@@ -1,3 +1,5 @@
+// src/main/java/com/nangnaidee/backend/dto/ReviewListResponse.java
+
 package com.nangnaidee.backend.dto;
 
 import java.util.List;

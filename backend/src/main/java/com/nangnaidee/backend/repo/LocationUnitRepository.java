@@ -1,4 +1,5 @@
 // src/main/java/com/nangnaidee/backend/repo/LocationUnitRepository.java
+
 package com.nangnaidee.backend.repo;
 
 import com.nangnaidee.backend.model.LocationUnit;

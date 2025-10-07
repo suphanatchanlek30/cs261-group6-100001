@@ -1,3 +1,5 @@
+// src/main/java/com/nangnaidee/backend/model/Location.java
+
 package com.nangnaidee.backend.model;
 
 import jakarta.persistence.*;
