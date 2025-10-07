@@ -1,8 +1,9 @@
-import Navbar from "@/components/navbar/Navbar";
+// app/(public)/home/page.jsx
 
 export default function HomePage() {
     return (
         // Navbar
-        <Navbar/>
+        // <Navbar/>
+        <div>test Home</div>
     );
 }

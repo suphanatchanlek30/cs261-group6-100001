@@ -1,5 +1,6 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
+import NavbarVisible from "@/components/navbar/NavbarVisible";
 
 const inter = Inter({
   variable: '--font-inter',
@@ -18,6 +19,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${inter.variable} antialiased`}
       >
+        <NavbarVisible />  {/* จะไม่โชว์บน /login และ /register */}
         {children}
       </body>
     </html>
