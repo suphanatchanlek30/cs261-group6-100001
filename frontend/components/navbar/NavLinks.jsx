@@ -9,7 +9,7 @@ export default function NavLinks({ mobile = false, onClick }) {
   const pathname = usePathname();
 
   const links = [
-    { name: "Home", href: "/" },
+    { name: "Home", href: "/home" },
     { name: "Search", href: "/search" },
     { name: "About Us", href: "/about" },
     { name: "Help", href: "/help" },
@@ -17,9 +17,9 @@ export default function NavLinks({ mobile = false, onClick }) {
 
   // ฟังก์ชันเช็ค active
   const isActive = (href) => {
-    if (href === "/home") {
+    if (href === "/") {
       // ให้ Home active เฉพาะตอนอยู่หน้า root จริง ๆ
-      return pathname === "/";
+      return pathname === "/home";
     }
     // หน้าอื่น ให้ active เมื่อ path เริ่มต้นด้วย href นั้น
     return pathname.startsWith(href);
