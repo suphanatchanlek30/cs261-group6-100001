@@ -3,18 +3,44 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { registerservice } from "@/services/authService";
 
 export default function RegisterForm() {
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("USER");
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [okMsg, setOkMsg] = useState("");
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setOkMsg("");
 
-    // test
-    console.log({ fullName, email, password, role });
+    setLoading(true);
+    try {
+      const payload = { email, password, fullName, role };
+      const res = await registerservice(payload);
+
+      if (!res.ok) {
+        setError(res.message || "ลงทะเบียนล้มเหลว");
+        return;
+      }
+
+      setOkMsg("สมัครสมาชิกสำเร็จ! กำลังพาไปหน้าเข้าสู่ระบบ...");
+      // ไปหน้า login (อาจพก email ไปเติมในฟอร์ม)
+      setTimeout(() => router.replace(`/login`), 700);
+    } catch (err) {
+      setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -62,6 +88,9 @@ export default function RegisterForm() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
+        {/* <p className="text-xs text-gray-500 mt-1">
+          Use at least 8 characters with a mix of upper/lowercase and numbers.
+        </p> */}
       </div>
 
       {/* Role Selection as toggle buttons */}
@@ -98,12 +127,24 @@ export default function RegisterForm() {
         </div>
       </div>
 
+      {/* Error / Success */}
+      {error && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
+          {error}
+        </div>
+      )}
+      {okMsg && (
+        <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md p-2">
+          {okMsg}
+        </div>
+      )}
+
       {/* ปุ่ม Register */}
       <button
         type="submit"
         className="w-full bg-[#1800ad] hover:bg-[#1F0C48FF] text-white py-2 rounded-lg text-lg font-medium mt-4"
       >
-        Sign Up
+        {loading ? "Signing up..." : "Sign Up"}
       </button>
 
       {/* ลิงก์กลับไป Login */}
