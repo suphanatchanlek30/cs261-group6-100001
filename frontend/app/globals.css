@@ -1,2 +1,28 @@
 @import "tailwindcss";
 
+
+/* NicoMoji font */
+
+@font-face {
+  font-family: 'NicoMoji';
+  src: url('/font/NicoMoji-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.nicomoji {
+  font-family: 'NicoMoji', ui-sans-serif, system-ui;
+}
+
+:root {
+  --font-nicomoji: 'NicoMoji', ui-sans-serif, system-ui;
+}
+
+.font-nicomoji {
+  font-family: var(--font-nicomoji);
+}
+
+body {
+  font-family: var(--font-inter);
+}

@@ -1,4 +1,5 @@
 // src/main/java/com/nangnaidee/backend/exception/InvalidRoleException.java
+
 package com.nangnaidee.backend.exception;
 
 

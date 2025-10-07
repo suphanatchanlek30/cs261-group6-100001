@@ -1,3 +1,5 @@
+// src/main/java/com/nangnaidee/backend/service/ReviewService.java
+
 package com.nangnaidee.backend.service;
 
 import com.nangnaidee.backend.dto.CreateReviewRequest;
@@ -75,7 +77,7 @@ public class ReviewService {
         
         reviewRepository.save(review);
         
-        return new CreateReviewResponse(review.getId());
+        return new CreateReviewResponse(review.getId(), "รีวิวสำเร็จแล้ว");
     }
     
     public ReviewListResponse getLocationReviews(UUID locationId, Integer minRating, int page, int size) {
