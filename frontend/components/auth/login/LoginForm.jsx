@@ -5,7 +5,7 @@
 // ฟอร์ม Login ที่จะเชื่อม API จริงในภายหลัง
 import { useState } from "react";
 
-export default function LoginForm() {
+export default function LoginForm({ showRegisterLink = true }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -62,13 +62,15 @@ export default function LoginForm() {
         Sign In
       </button>
 
-      {/* ลิงก์ไปสมัครสมาชิก */}
-      <p className="text-center text-sm text-gray-600 mt-2">
-        New account ?{" "}
-        <a href="/register" className="text-[#1800ad] hover:underline">
-          Register here.
-        </a>
-      </p>
+      {/* ลิงก์ไปสมัครสมาชิก (โชว์เฉพาะถ้าเปิดใช้งาน) */}
+      {showRegisterLink && (
+        <p className="text-center text-sm text-gray-600 mt-2">
+          New account?{" "}
+          <a href="/register" className="text-[#1800ad] hover:underline">
+            Register here.
+          </a>
+        </p>
+      )}
     </form>
   );
 }
