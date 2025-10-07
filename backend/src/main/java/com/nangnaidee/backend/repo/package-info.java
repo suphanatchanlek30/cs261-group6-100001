@@ -1,3 +1,5 @@
+// src/main/java/com/nangnaidee/backend/repo
+
 package com.nangnaidee.backend.repo;
 
 // Repository interfaces live here (e.g., UserRepo, BookingRepo)
