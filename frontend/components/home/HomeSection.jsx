@@ -7,7 +7,8 @@ import { FiChevronRight } from "react-icons/fi";
 import { LOCATIONS, POPULAR_LOCATIONS } from "./data";
 import LocationCard from "./LocationCard";
 import PopularFilters from "./PopularFilters";
-import SearchPage from "@/app/search/page";
+import SearchSection from "../search/SearchSection";
+
 
 export default function HomeSection() {
   // เตรียมข้อมูลโชว์หน้าแรกสูงสุด 6 การ์ด
@@ -15,13 +16,14 @@ export default function HomeSection() {
   const hasMore = LOCATIONS.length > 6; // มีมากกว่า 6 ใบ → โชว์ปุ่ม
 
   return (
+    <div className="mx-auto max-w-7xl px-4 py-8">
+        {/* Search */}
+       <SearchSection onSearch={(payload) => console.log("Search:", payload)} />
+    
     <div className="mx-auto max-w-6xl px-4 py-8">
-      {/* Search */}
-      <SearchPage />
-
       
       {/* หัวเรื่อง */}
-      <h1 className="text-2xl font-semibold tracking-tight mb-6">
+      <h1 className="text-2xl font-bold text-[#282828] mb-6 mt-4">
         Most popular location
       </h1>
 
@@ -55,6 +57,7 @@ export default function HomeSection() {
           </Link>
         </div>
       )}
+    </div>
     </div>
   );
 }

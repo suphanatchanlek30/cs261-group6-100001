@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+* {
+  font-family: var(--font-noto-sans-thai), ui-sans-serif, system-ui, sans-serif;
+}
+
 /* NicoMoji font */
 
 @font-face {
