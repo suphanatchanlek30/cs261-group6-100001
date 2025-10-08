@@ -24,7 +24,6 @@ const ChevronDownIcon = () => (
 export default function Search({ onSearch }) {
     const [keyword, setKeyword] = useState("");
     const [nearOn, setNearOn] = useState(true);
-    // Reverted back to distance state
     const [distance, setDistance] = useState(5); 
     const detailsRef = useRef(null);
     const [ph, setPh] = useState("Search by name or keyword");
@@ -33,13 +32,12 @@ export default function Search({ onSearch }) {
         const payload = {
             keyword: keyword.trim(),
             nearMe: nearOn,
-            distanceKm: distance, // Changed back to distanceKm
+            distanceKm: distance,
         };
         if (typeof onSearch === "function") onSearch(payload);
         else console.log("Search Payload:", payload);
     };
 
-    // New distance options
     const distanceOptions = [5, 10, 20];
 
     return (
@@ -56,7 +54,7 @@ export default function Search({ onSearch }) {
                 <main className="relative z-10 flex flex-col justify-center p-8 md:p-16">
                     <div className="max-w-3xl text-center md:text-left">
                         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white drop-shadow-sm md:text-4xl text-outline whitespace-nowrap">
-                                                                       จองพื้นที่อ่านเงียบได้ในไม่กี่คลิก
+                                                        จองพื้นที่อ่านเงียบได้ในไม่กี่คลิก
                         </h1>
                         <p className="mt-4 text-sm sm:text-base text-black/90 whitespace-nowrap">
                             <span className="font-bold">ค้นหา เลือกเวลา ชำระเงิน แล้วรอคอนเฟิร์ม</span>
@@ -84,7 +82,6 @@ export default function Search({ onSearch }) {
                             <span className="hidden sm:inline">Near Me</span>
                         </button>
                         
-                        {/* Distance Dropdown */}
                         <div className="relative">
                             <details ref={detailsRef} className="group">
                                 <summary className="flex list-none cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-3 h-11 text-sm font-medium text-neutral-800 shadow-sm ring-1 ring-black/5 transition-colors hover:bg-gray-50">
@@ -92,7 +89,8 @@ export default function Search({ onSearch }) {
                                     <span className="font-semibold">{distance} km</span>
                                     <ChevronDownIcon />
                                 </summary>
-                                <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border bg-white p-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
+                                {/* REVISED POSITIONING FOR DROPDOWN MENU */}
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 origin-top rounded-xl border bg-white p-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
                                     {distanceOptions.map((d) => (
                                         <button
                                             key={d} 

@@ -61,10 +61,8 @@ export default function Search({ onSearch }) {
                         </p>
                     </div>
 
-                    {/* Search Bar - REVISED SINGLE-LINE FLEX LAYOUT */}
                     <div className="mt-10 flex flex-wrap items-center gap-2 rounded-xl bg-white/80 p-2 shadow-lg ring-1 ring-black/5 backdrop-blur-md">
                         
-                        {/* Keyword Input */}
                         <div className="flex flex-1 items-center gap-2 px-3 h-11 min-w-[200px] rounded-lg bg-white shadow-sm ring-1 ring-black/5">
                             <SearchIcon />
                             <input
@@ -76,7 +74,6 @@ export default function Search({ onSearch }) {
                             />
                         </div>
                         
-                        {/* Near Me Button */}
                         <button
                             type="button" aria-pressed={nearOn} onClick={() => setNearOn((v) => !v)}
                             className={`flex items-center justify-center gap-2 rounded-lg px-3 h-11 text-sm font-medium transition-colors ${ nearOn ? "bg-white text-neutral-800 shadow-sm ring-1 ring-black/5" : "bg-gray-50 text-neutral-600" }`}
@@ -85,7 +82,6 @@ export default function Search({ onSearch }) {
                             <span className="hidden sm:inline">Near Me</span>
                         </button>
                         
-                        {/* Price Dropdown */}
                         <div className="relative">
                             <details ref={detailsRef} className="group">
                                 <summary className="flex list-none cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-3 h-11 text-sm font-medium text-neutral-800 shadow-sm ring-1 ring-black/5 transition-colors hover:bg-gray-50">
@@ -93,7 +89,8 @@ export default function Search({ onSearch }) {
                                     <span className="font-semibold">{priceSort}</span>
                                     <ArrowsUpDownIcon />
                                 </summary>
-                                <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border bg-white p-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
+                                {/* REVISED POSITIONING FOR DROPDOWN MENU */}
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 origin-top rounded-xl border bg-white p-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
                                     {priceOptions.map((option) => (
                                         <button
                                             key={option} 
@@ -107,7 +104,6 @@ export default function Search({ onSearch }) {
                             </details>
                         </div>
 
-                        {/* Search Button */}
                         <button
                             onClick={handleSearch}
                             className="flex-grow sm:flex-grow-0 rounded-lg bg-violet-500 px-5 h-12 text-sm font-semibold text-white shadow-sm transition-all duration-200 ease-in-out hover:bg-violet-600 active:scale-95"
@@ -120,3 +116,4 @@ export default function Search({ onSearch }) {
         </div>
     );
 }
+
