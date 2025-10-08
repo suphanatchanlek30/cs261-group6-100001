@@ -7,6 +7,7 @@ import { FiChevronRight } from "react-icons/fi";
 import { LOCATIONS, POPULAR_LOCATIONS } from "./data";
 import LocationCard from "./LocationCard";
 import PopularFilters from "./PopularFilters";
+import SearchPage from "@/app/search/page";
 
 export default function HomeSection() {
   // เตรียมข้อมูลโชว์หน้าแรกสูงสุด 6 การ์ด
@@ -15,6 +16,10 @@ export default function HomeSection() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
+      {/* Search */}
+      <SearchPage />
+
+      
       {/* หัวเรื่อง */}
       <h1 className="text-2xl font-semibold tracking-tight mb-6">
         Most popular location

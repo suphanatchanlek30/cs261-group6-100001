@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-
 /* NicoMoji font */
 
 @font-face {
@@ -25,4 +24,24 @@
 
 body {
   font-family: var(--font-inter);
+}
+
+
+/* Prompt font*/
+
+@font-face {
+  font-family: 'Prompt';
+  src: url('/font/Prompt-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+.text-outline {
+  text-shadow: 
+    -1px -1px 0 #4B5563, 
+     1px -1px 0 #4B5563,
+    -1px  1px 0 #4B5563,
+     1px  1px 0 #4B5563;
 }

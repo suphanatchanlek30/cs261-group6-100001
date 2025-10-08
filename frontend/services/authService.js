@@ -10,7 +10,11 @@ import axios from './axiosInstance';
 export const loginservice = async (values) => {
   try {
     const res = await axios.post("/auth/login", values);
-    return { ok: true, data: res.data };
+    const data = res.data;
+    const token = data?.token || data?.accessToken;
+    const roles = data?.roles || data?.user?.roles || []; // ← ดึง roles
+  
+    return { ok: true, data: res.data, token, roles };
   } catch (error) {
     error?.response?.data?.message ||
       error?.message ||
