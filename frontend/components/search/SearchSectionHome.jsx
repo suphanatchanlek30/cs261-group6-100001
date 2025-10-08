@@ -1,4 +1,4 @@
-// components/search/SearchSection.jsx
+// components/search/SearchSectionHome.jsx
 "use client";
 
 // รวมทุกอย่าง (พาดหัว + การ์ดค้นหา)
@@ -12,7 +12,7 @@ import NearMeToggle from "./Controls/NearMeToggle";
 import DistanceSelect from "./Controls/DistanceSelect";
 import SearchButton from "./Controls/SearchButton";
 
-export default function SearchSection({ onSearch }) {
+export default function SearchSectionHome({ onSearch }) {
   const [keyword, setKeyword] = useState("");
   const [nearMe, setNearMe] = useState(true);
   const [distance, setDistance] = useState(5);
@@ -33,7 +33,7 @@ export default function SearchSection({ onSearch }) {
 
       <Banner>
         <div className="w-full max-w-[980px] mx-auto">
-          {/* On small screens: stacked (input then controls). On md+: inline row (input left, controls right) */}
+          {/* xs: ซ้อนแนวตั้ง / md+: เรียง 1 แถว */}
           <div className="flex flex-col md:flex-row items-center md:items-stretch gap-3">
             <div className="w-full md:flex-1">
               <SearchInput value={keyword} onChange={setKeyword} />

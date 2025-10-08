@@ -7,7 +7,7 @@ import { FiChevronRight } from "react-icons/fi";
 import { LOCATIONS, POPULAR_LOCATIONS } from "./data";
 import LocationCard from "./LocationCard";
 import PopularFilters from "./PopularFilters";
-import SearchSection from "../search/SearchSection";
+import SearchSectionHome from "../search/SearchSectionHome";
 
 
 export default function HomeSection() {
@@ -18,7 +18,7 @@ export default function HomeSection() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
         {/* Search */}
-       <SearchSection onSearch={(payload) => console.log("Search:", payload)} />
+       <SearchSectionHome onSearch={(payload) => console.log("Search:", payload)} />
     
     <div className="mx-auto max-w-6xl px-4 py-8">
       
