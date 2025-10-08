@@ -1,4 +1,3 @@
-
 // app/(public)/home/page.jsx
 
 import HomeSection from "@/components/home/HomeSection";
