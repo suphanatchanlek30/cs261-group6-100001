@@ -138,6 +138,38 @@ export default function PaymentPage() {
                     <p className="mt-2 text-xs text-red-600">
                         **Please make payment within 30 minutes**
                     </p>
+
+                    {/* ส่วนแสดงภาพสลิปที่อัปโหลด (Preview) */}
+                    {slip && (
+                        <div className="mt-4">
+                            <img
+                                src={slip}
+                                alt="Uploaded Slip"
+                                className="mx-auto w-56 rounded-lg shadow-md border border-gray-200 transition-transform hover:scale-[1.02]"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Slip uploaded successfully</p>
+                        </div>
+                    )}
+
+
+                    <div className="flex justify-center gap-3 mt-5">
+                        {/* ปุ่ม Upload */}
+                        <label className="min-w-[180px] border border-[#9747FF] text-[#9747FF] hover:bg-[#f3e8ff] px-4 py-2 rounded-lg text-sm font-medium cursor-pointer flex items-center justify-center gap-2 transition-colors duration-200">
+                            <FiUpload className="text-sm" />
+                            Upload payment slip
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        setSlip(URL.createObjectURL(file)); // แสดง preview
+                                    }
+                                }}
+                                className="hidden"
+                            />
+                        </label>
+                    </div>
                 </div>
             )}
 
