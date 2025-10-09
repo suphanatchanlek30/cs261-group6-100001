@@ -1,19 +1,12 @@
-import { Noto_Sans_Thai } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import NavbarVisible from "@/components/navbar/NavbarVisible";
 
-// const inter = Inter({
-//   variable: '--font-inter',
-//   subsets: ['latin'],
-//   display: 'swap',
-// })
-
-const noto = Noto_Sans_Thai({
-  variable: "--font-noto-sans-thai",
-  subsets: ["thai", "latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  display: "swap",
-});
+const inter = Inter({
+  variable: '--font-inter',
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 export const metadata = {
   title: "NangNaiDee",
@@ -24,7 +17,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${noto.variable} antialiased`}
+        className={`${inter.variable} antialiased`}
       >
         <NavbarVisible />  {/* จะไม่โชว์บน /login และ /register */}
         {children}
