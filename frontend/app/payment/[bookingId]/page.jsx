@@ -1,11 +1,44 @@
 "use client";
 import { useState } from "react";
-import { FiMapPin, FiUsers, FiVolumeX, FiWifi, FiClock } from "react-icons/fi";
+import { FiMapPin, FiUsers, FiVolumeX, FiWifi, FiClock, FiUpload } from "react-icons/fi";
 
 
 
 export default function PaymentPage() {
-    const [showQR, setShowQR] = useState(false);
+    const [showQR, setShowQR] = useState(false); // แสดง/ซ่อน QR
+    const [slip, setSlip] = useState(null); // เก็บสลิปอัปโหลด
+    const [sent, setSent] = useState(false); // สถานะส่งสลิปแล้ว
+
+    // ฟังก์ชันเมื่อกดปุ่ม "Create a payment QR code"
+    const handleCreateQR = () => {
+        setShowQR(true);
+    };
+
+    // ฟังก์ชันอัปโหลดสลิป (เลือกไฟล์)
+    const handleUploadSlip = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSlip(URL.createObjectURL(file));
+        }
+    };
+
+    // ฟังก์ชันส่งสลิป
+    const handleSendSlip = async () => {
+        if (!slip) {
+            alert("Please upload your slip before sending!");
+            return;
+        }
+
+        try {
+            await new Promise((resolve) => setTimeout(resolve, 1000)); // mock ส่งข้อมูล
+            setSent(true); // แสดง popup สำเร็จ
+            setShowQR(false);
+            setSlip(null);
+        } catch (error) {
+            console.error(error);
+            alert("Failed to send slip. Please try again.");
+        }
+    };
 
     // ข้อมูลจองโต๊ะ (ตัวอย่าง)
     const booking = {
@@ -88,6 +121,26 @@ export default function PaymentPage() {
                     </button>
                 </div>
             </div>
+
+            {/* แสดง QR code เมื่อคลิกปุ่ม */}
+            {/* QR */}
+            {showQR && (
+                <div className="mt-8 text-center p-6 bg-white shadow-md rounded-2xl">
+                    <p className="mb-4 text-sm text-gray-700">
+                        Payment has been made through the banking app. <br />
+                        Upload payment slip below
+                    </p>
+                    <img
+                        src="https://res.cloudinary.com/dqo72maxa/image/upload/v1760012825/Frame_637_vkzcyl.png" // ตัวอย่าง QR code
+                        alt="QR Code"
+                        className="mx-auto w-44 rounded-lg shadow"
+                    />
+                    <p className="mt-2 text-xs text-red-600">
+                        **Please make payment within 30 minutes**
+                    </p>
+                </div>
+            )}
+
         </main>
     );
 }
