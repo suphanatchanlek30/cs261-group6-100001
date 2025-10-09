@@ -26,3 +26,38 @@
 body {
   font-family: var(--font-inter);
 }
+
+/* SweetAlert2 Custom Styles */
+.swal2-popup {
+  border-radius: 16px !important;
+  padding: 1.5rem 2rem !important;
+  font-size: 0.9rem !important;
+}
+
+.swal2-title {
+  font-size: 1.05rem !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+}
+
+.swal2-html-container {
+  font-size: 0.9rem !important;
+  color: #555 !important;
+}
+
+.swal2-confirm {
+  border-radius: 8px !important;
+  padding: 0.6rem 1.5rem !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+}
+
+.swal2-icon {
+  width: 70px !important;
+  height: 70px !important;
+}
+
+.swal2-popup {
+  max-width: 340px !important;
+  line-height: 1.4 !important;
+}
