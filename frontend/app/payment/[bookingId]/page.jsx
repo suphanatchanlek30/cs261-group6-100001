@@ -5,6 +5,7 @@ import { FiMapPin, FiUsers, FiVolumeX, FiWifi, FiClock } from "react-icons/fi";
 
 
 export default function PaymentPage() {
+    const [showQR, setShowQR] = useState(false);
 
     // ข้อมูลจองโต๊ะ (ตัวอย่าง)
     const booking = {
@@ -75,7 +76,16 @@ export default function PaymentPage() {
                     <p className="text-sm text-purple-600 font-semibold mt-1">
                         Total {booking.total} Baht
                     </p>
+                </div>
 
+                {/* ปุ่มสร้าง QR code */}
+                <div className="mt-4 flex justify-end w-full md:mt-0 md:w-auto">
+                    <button
+                        onClick={() => setShowQR(true)}
+                        className="bg-[#9747FF] hover:bg-[#6750A4] text-white text-sm px-5 py-2 rounded-lg"
+                    >
+                        Create a payment QR code
+                    </button>
                 </div>
             </div>
         </main>
