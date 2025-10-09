@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { FiMapPin, FiUsers, FiVolumeX, FiWifi, FiClock, FiUpload } from "react-icons/fi";
+import Swal from "sweetalert2";
 
 
 
@@ -23,21 +24,33 @@ export default function PaymentPage() {
     };
 
     // ฟังก์ชันส่งสลิป
-    const handleSendSlip = async () => {
+    const handleSendSlip = () => {
+        // แสดง popup warning ถ้ายังไม่อัปโหลดสลิป
         if (!slip) {
-            alert("Please upload your slip before sending!");
+            Swal.fire({
+                icon: "warning",
+                title: "No slip uploaded!",
+                text: "Please upload your payment slip before sending.",
+                confirmButtonColor: "#7E57C2",
+            });
             return;
         }
-
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 1000)); // mock ส่งข้อมูล
-            setSent(true); // แสดง popup สำเร็จ
-            setShowQR(false);
-            setSlip(null);
-        } catch (error) {
-            console.error(error);
-            alert("Failed to send slip. Please try again.");
-        }
+        // แสดง popup success เมื่อส่งสลิปสำเร็จ
+        Swal.fire({
+            icon: "success",
+            title: "We have received your slip.",
+            text: "Please wait for approval from the admin.",
+            showConfirmButton: true,
+            confirmButtonText: "Go to My Booking",
+            confirmButtonColor: "#22C55E",
+            customClass: {
+                popup: "rounded-2xl",
+            },
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "/user/boohings"; // เปลี่ยนหน้า
+            }
+        });
     };
 
     // ข้อมูลจองโต๊ะ (ตัวอย่าง)
