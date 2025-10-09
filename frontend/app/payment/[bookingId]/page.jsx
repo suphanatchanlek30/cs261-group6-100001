@@ -31,7 +31,7 @@ export default function PaymentPage() {
                 icon: "warning",
                 title: "No slip uploaded!",
                 text: "Please upload your payment slip before sending.",
-                confirmButtonColor: "#7E57C2",
+                confirmButtonColor: "#9747FF",
             });
             return;
         }
@@ -48,7 +48,7 @@ export default function PaymentPage() {
             },
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = "/user/boohings"; // เปลี่ยนหน้า
+                window.location.href = "/user/boohing"; // เปลี่ยนหน้า
             }
         });
     };
