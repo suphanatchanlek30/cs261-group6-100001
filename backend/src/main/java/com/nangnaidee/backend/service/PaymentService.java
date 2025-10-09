@@ -65,33 +65,39 @@ public class PaymentService {
             throw new UnauthorizedException("คุณไม่ใช่เจ้าของ Booking นี้");
         }
 
-//        if (paymentRepository.existsByBookingId(bookingId)) {
-//            throw new ConflictException("Payment สำหรับ Booking นี้มีอยู่แล้ว");
-//        }
+        // if (paymentRepository.existsByBookingId(bookingId)) {
+        // throw new ConflictException("Payment สำหรับ Booking นี้มีอยู่แล้ว");
+        // }
 
+        // เช็คเงื่อนไขต่างๆ ของ Booking
         var existingOpt = paymentRepository.findByBookingId(bookingId);
         if (existingOpt.isPresent()) {
             Payment existing = existingOpt.get();
 
-            // กรณี 1: ยังอยู่สถานะ PENDING และยังไม่แนบสลิป → อนุญาต "กดสร้าง QR ซ้ำ" โดยคืนตัวเดิม
-            if ("PENDING".equals(existing.getStatus()) && (existing.getProofUrl() == null || existing.getProofUrl().isBlank())) {
-                // (ออปชัน) ถ้าคุณมีฟิลด์สำหรับ QR เช่น qrPayload/qrExpiresAt ให้ "ออก QR ใหม่" ที่นี่ได้
+            // กรณี 1: ยังอยู่สถานะ PENDING และยังไม่แนบสลิป → อนุญาต "กดสร้าง QR ซ้ำ"
+            // โดยคืนตัวเดิม
+            if ("PENDING".equals(existing.getStatus())
+                    && (existing.getProofUrl() == null || existing.getProofUrl().isBlank())) {
+                // (ออปชัน) ถ้าคุณมีฟิลด์สำหรับ QR เช่น qrPayload/qrExpiresAt ให้ "ออก QR ใหม่"
+                // ที่นี่ได้
                 // existing.setQrPayload(generateNewQr(...));
                 // existing.setQrExpiresAt(LocalDateTime.now().plusMinutes(15));
                 Payment saved = paymentRepository.save(existing);
                 return new CreatePaymentResponse(saved.getId(), saved.getStatus(), saved.getAmount());
             }
 
-            // กรณี 2: ถ้าสถานะเป็น REJECTED แล้วอยากให้ “เริ่มใหม่” ก็รีเซ็ตกลับ PENDING ได้ (ออปชัน)
+            // กรณี 2: ถ้าสถานะเป็น REJECTED แล้วอยากให้ “เริ่มใหม่” ก็รีเซ็ตกลับ PENDING
+            // ได้ (ออปชัน)
             // uncomment ถ้าต้องการรองรับ flow นี้
             /*
-            if ("REJECTED".equals(existing.getStatus())) {
-                existing.setStatus("PENDING");
-                existing.setProofUrl(null);
-                Payment saved = paymentRepository.save(existing);
-                return new CreatePaymentResponse(saved.getId(), saved.getStatus(), saved.getAmount());
-            }
-            */
+             * if ("REJECTED".equals(existing.getStatus())) {
+             * existing.setStatus("PENDING");
+             * existing.setProofUrl(null);
+             * Payment saved = paymentRepository.save(existing);
+             * return new CreatePaymentResponse(saved.getId(), saved.getStatus(),
+             * saved.getAmount());
+             * }
+             */
 
             // กรณี 3: ถ้า APPROVED แล้ว / แนบสลิปแล้ว → ไม่อนุญาตสร้าง/กดซ้ำ
             throw new ConflictException("Payment สำหรับ Booking นี้ดำเนินการไปแล้ว");
@@ -155,7 +161,7 @@ public class PaymentService {
 
         if (!"CONFIRMED".equals(booking.getStatus())) { // ป้องกันทับของที่ยืนยันแล้ว
             booking.setStatus("PENDING_REVIEW");
-            bookingRepository.save(booking);            // ต้องเซฟ booking ด้วย
+            bookingRepository.save(booking); // ต้องเซฟ booking ด้วย
         }
 
         return new ProofPaymentResponse(
