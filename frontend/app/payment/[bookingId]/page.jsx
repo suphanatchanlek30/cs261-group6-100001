@@ -152,9 +152,9 @@ export default function PaymentPage() {
                     )}
 
 
-                    <div className="flex justify-center gap-3 mt-5">
+                    <div className="flex flex-col md:flex-row justify-center items-center gap-3 mt-5">
                         {/* ปุ่ม Upload */}
-                        <label className="min-w-[180px] border border-[#9747FF] text-[#9747FF] hover:bg-[#f3e8ff] px-4 py-2 rounded-lg text-sm font-medium cursor-pointer flex items-center justify-center gap-2 transition-colors duration-200">
+                        <label className="w-[85%] md:w-[180px] h-[44px] border border-[#9747FF] text-[#9747FF] hover:bg-[#f3e8ff] px-4 py-2 rounded-lg text-sm font-medium cursor-pointer flex items-center justify-center gap-2 transition-all duration-200">
                             <FiUpload className="text-sm" />
                             Upload payment slip
                             <input
@@ -169,10 +169,19 @@ export default function PaymentPage() {
                                 className="hidden"
                             />
                         </label>
+
+                        {/* ปุ่ม Send */}
+                        <button
+                            onClick={handleSendSlip}
+                            className="w-[85%] md:w-[180px] h-[44px] bg-[#9747FF] hover:bg-[#6750A4] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                        >
+                            Send the slip
+                        </button>
                     </div>
                 </div>
-            )}
+            )
+            }
 
-        </main>
+        </main >
     );
 }
