@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FiEdit2, FiTrash2, FiImage } from "react-icons/fi";
 import { getLocations, getAllLocations } from "@/services/locationService";
+import { useRouter } from "next/navigation";
 
 export default function ManageLocationTable({
   keyword = "",
@@ -15,6 +16,8 @@ export default function ManageLocationTable({
   const [total, setTotal] = useState(0);     // ใช้เมื่อ modeAll=false
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+
+  const router = useRouter();
 
   // ทำให้ debounce เล็ก ๆ ตอนเปลี่ยน keyword
   const q = useMemo(() => keyword?.trim() || undefined, [keyword]);
@@ -101,9 +104,13 @@ export default function ManageLocationTable({
               </div>
 
               {/* Name */}
-              <div className="col-span-4">
-                <div className="font-medium text-gray-800">{it.name}</div>
-                {/* (ออปชัน) แสดง id เล็ก ๆ */}
+              <div
+                className="col-span-4 cursor-pointer"
+                onClick={() => router.push(`/admin/locations/${it.id}`)}
+              >
+                <div className="font-medium text-[#7C3AED] hover:underline">
+                  {it.name}
+                </div>
                 <div className="text-xs text-gray-400">id : {it.id}</div>
               </div>
 

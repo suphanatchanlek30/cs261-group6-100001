@@ -54,3 +54,16 @@ export async function getAllLocations({ q, near, radiusKm, batchSize = 20 } = {}
 
   return { ok: true, data: { items: all, page: 0, size: all.length, total: all.length } };
 }
+
+
+export async function getLocationById(id) {
+  try {
+    const res = await axios.get(`/locations/${id}`);
+    return { ok: true, data: res.data };
+  } catch (err) {
+    return {
+      ok: false,
+      message: err.response?.data || err.message || "เกิดข้อผิดพลาด",
+    };
+  }
+}

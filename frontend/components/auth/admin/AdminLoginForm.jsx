@@ -9,7 +9,7 @@ import { setToken } from "@/utils/authClient";
 // import jwtDecode from "jwt-decode";
 
 export default function AdminLoginForm({
-  adminRedirect = "/admin/dashboard",
+  adminRedirect = "/admin/users",
   fallbackUserRedirect = "/home",
 }) {
   const router = useRouter();

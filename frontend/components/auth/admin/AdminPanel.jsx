@@ -15,7 +15,7 @@ export default function AdminPanel() {
       </div>
 
       {/* พาไป path ที่อยากให้แอดมินเข้า */}
-      <AdminLoginForm adminRedirect="/admin/dashboard" />
+      <AdminLoginForm adminRedirect="/admin/users" />
     </div>
   );
 }
