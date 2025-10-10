@@ -1,10 +1,9 @@
-// admin/locations/[id]/page.jsx
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getLocationById } from "@/services/locationService";
+import AddUnitModal from "@/components/admin-dashboard/locations/AddUnitModal";
 
 export default function LocationDetailPage() {
   const { id } = useParams();
@@ -12,16 +11,18 @@ export default function LocationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [loc, setLoc] = useState(null);
   const [error, setError] = useState("");
+  const [showAddUnit, setShowAddUnit] = useState(false);
+
+  const fetchLocation = async () => {
+    const { ok, data, message } = await getLocationById(id);
+    if (!ok) setError(message || "ไม่พบข้อมูลสถานที่");
+    else setLoc(data);
+  };
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { ok, data, message } = await getLocationById(id);
-      if (!ok) {
-        setError(message || "ไม่พบข้อมูลสถานที่");
-      } else {
-        setLoc(data);
-      }
+      await fetchLocation();
       setLoading(false);
     })();
   }, [id]);
@@ -56,20 +57,28 @@ export default function LocationDetailPage() {
           <h1 className="text-3xl font-semibold text-gray-800 tracking-tight">
             {loc.name}
           </h1>
-          <button
-            onClick={() => router.push("/admin/locations")}
-            className="px-5 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition font-medium text-gray-700"
-          >
-            ← กลับ
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push(`/admin/locations/${id}/edit`)}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              แก้ไข location
+            </button>
+            <button
+              onClick={() => router.push("/admin/locations")}
+              className="px-4 py-2 text-sm border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              ← กลับ
+            </button>
+          </div>
         </div>
 
         {/* Info Grid */}
         <div className="grid grid-cols-2 gap-8">
           <InfoBlock label="คำอธิบาย" value={loc.description || "-"} />
           <InfoBlock label="ที่อยู่" value={loc.address || "-"} />
-          <InfoBlock label="Latitude" value={loc.geoLat?.toFixed(6)} />
-          <InfoBlock label="Longitude" value={loc.geoLng?.toFixed(6)} />
+          <InfoBlock label="Latitude" value={loc.geoLat?.toFixed?.(6) ?? "-"} />
+          <InfoBlock label="Longitude" value={loc.geoLng?.toFixed?.(6) ?? "-"} />
           <InfoBlock
             label="สถานะการใช้งาน"
             value={
@@ -86,7 +95,7 @@ export default function LocationDetailPage() {
           />
           <InfoBlock
             label="วันที่สร้าง"
-            value={new Date(loc.createdAt).toLocaleString("th-TH")}
+            value={loc.createdAt ? new Date(loc.createdAt).toLocaleString("th-TH") : "-"}
           />
         </div>
 
@@ -107,11 +116,20 @@ export default function LocationDetailPage() {
         </div>
 
         {/* Units Section */}
-        {loc.units && loc.units.length > 0 && (
-          <div className="mt-14">
-            <h2 className="text-xl font-semibold text-gray-800 mb-5">
+        <div className="mt-14">
+          <div className="flex justify-between items-center mb-5">
+            <h2 className="text-xl font-semibold text-gray-800">
               รายการพื้นที่ในสถานที่ (Units)
             </h2>
+            <button
+              onClick={() => setShowAddUnit(true)}
+              className="px-4 py-2 bg-[#7C3AED] text-white rounded-md hover:bg-[#6B21A8]"
+            >
+              + เพิ่มยูนิต
+            </button>
+          </div>
+
+          {loc.units && loc.units.length > 0 ? (
             <div className="grid grid-cols-2 gap-6">
               {loc.units.map((u) => (
                 <div
@@ -125,7 +143,9 @@ export default function LocationDetailPage() {
                       className="w-24 h-24 object-cover rounded-md border border-gray-200"
                     />
                     <div>
-                      <div className="font-semibold text-gray-800">{u.name}</div>
+                      <div className="font-semibold text-gray-800">
+                        {u.name}
+                      </div>
                       <div className="text-sm text-gray-600 mt-1">
                         {u.shortDesc || "-"}
                       </div>
@@ -151,14 +171,25 @@ export default function LocationDetailPage() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <p className="text-gray-500 text-center mt-5">
+              ยังไม่มียูนิตในสถานที่นี้
+            </p>
+          )}
+        </div>
       </section>
+
+      {/* Modal เพิ่มยูนิต */}
+      <AddUnitModal
+        open={showAddUnit}
+        onClose={() => setShowAddUnit(false)}
+        locationId={loc.id}
+        onAdded={() => fetchLocation()}
+      />
     </div>
   );
 }
 
-/* Sub Component: ข้อมูลแต่ละช่อง */
 function InfoBlock({ label, value }) {
   return (
     <div>

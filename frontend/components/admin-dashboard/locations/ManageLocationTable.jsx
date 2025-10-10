@@ -1,25 +1,21 @@
-// components/admin-dashboard/locations/ManageLocationTable.jsx
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { FiEdit2, FiTrash2, FiImage } from "react-icons/fi";
 import { getLocations, getAllLocations } from "@/services/locationService";
-import { useRouter } from "next/navigation";
 
 export default function ManageLocationTable({
   keyword = "",
-  modeAll = true,        // true = โหลดทั้งหมด (ตามที่ขอ), false = แบ่งหน้า
-  pageSize = 20,         // ใช้เมื่อ modeAll=false
+  modeAll = true,
+  pageSize = 20,
 }) {
   const [items, setItems] = useState([]);
-  const [page, setPage] = useState(0);       // ใช้เมื่อ modeAll=false
-  const [total, setTotal] = useState(0);     // ใช้เมื่อ modeAll=false
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  const router = useRouter();
-
-  // ทำให้ debounce เล็ก ๆ ตอนเปลี่ยน keyword
   const q = useMemo(() => keyword?.trim() || undefined, [keyword]);
 
   useEffect(() => {
@@ -27,17 +23,14 @@ export default function ManageLocationTable({
     (async () => {
       setLoading(true);
       setErr("");
-
       try {
         if (modeAll) {
-          // โหมดโหลดทั้งหมด (จะไล่ทุกหน้าในฝั่ง client)
           const { ok, data, message } = await getAllLocations({ q, batchSize: 100 });
           if (!ok) throw new Error(message);
           if (cancelled) return;
           setItems(data.items || []);
           setTotal(data.total || 0);
         } else {
-          // โหมดแบ่งหน้า
           const { ok, data, message } = await getLocations({ q, page, size: pageSize });
           if (!ok) throw new Error(message);
           if (cancelled) return;
@@ -50,10 +43,7 @@ export default function ManageLocationTable({
         if (!cancelled) setLoading(false);
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [q, modeAll, page, pageSize]);
 
   const totalPages = useMemo(
@@ -63,12 +53,11 @@ export default function ManageLocationTable({
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      {/* Header row */}
       <div className="grid grid-cols-12 px-4 py-3 text-sm font-semibold text-gray-800 border-b border-gray-200">
         <div className="col-span-2">Image</div>
         <div className="col-span-4">Place name</div>
         <div className="col-span-4">Address</div>
-        <div className="col-span-1 text-center">Is Active</div>
+        <div className="col-span-1 text-center">Status</div>
         <div className="col-span-1 text-center">Manage</div>
       </div>
 
@@ -81,20 +70,11 @@ export default function ManageLocationTable({
       ) : (
         <ul className="divide-y">
           {items.map((it) => (
-            <li
-              key={it.id}
-              className="grid grid-cols-12 items-center border-b border-gray-200 px-4 py-3 hover:bg-gray-50"
-            >
-              {/* Image */}
+            <li key={it.id} className="grid grid-cols-12 items-center px-4 py-3 hover:bg-gray-50 border-b border-gray-200">
               <div className="col-span-2">
                 {it.coverImageUrl ? (
-                  <div className="relative w-40 h-16 rounded-md overflow-hidden">
-                    {/* ใช้ <img> เพื่อเลี่ยง config next/image ตอนนี้ */}
-                    <img
-                      src={it.coverImageUrl}
-                      alt={it.name}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="relative w-40 h-16 rounded-md overflow-hidden ">
+                    <img src={it.coverImageUrl} alt={it.name} className="w-full h-full object-cover" />
                   </div>
                 ) : (
                   <div className="w-20 h-14 rounded-md border flex items-center justify-center text-gray-400">
@@ -103,23 +83,22 @@ export default function ManageLocationTable({
                 )}
               </div>
 
-              {/* Name */}
-              <div
-                className="col-span-4 cursor-pointer"
-                onClick={() => router.push(`/admin/locations/${it.id}`)}
-              >
-                <div className="font-medium text-[#7C3AED] hover:underline">
+              {/* คลิกชื่อ → ไปหน้า detail */}
+              <div className="col-span-4">
+                <Link
+                  href={`/admin/locations/${it.id}`}
+                  className="font-medium text-[#7C3AED] hover:text-[#7C3AED] transition underline"
+                  title="ดูรายละเอียดสถานที่"
+                >
                   {it.name}
-                </div>
+                </Link>
                 <div className="text-xs text-gray-400">id : {it.id}</div>
               </div>
 
-              {/* Address */}
               <div className="col-span-4 text-gray-600">{it.address}</div>
 
-              {/* Is Active */}
               <div className="col-span-1 text-center">
-                {it.isActive ? (
+                {(it.isActive ?? it.active) ? (
                   <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700 border border-green-200">
                     Active
                   </span>
@@ -130,16 +109,18 @@ export default function ManageLocationTable({
                 )}
               </div>
 
-              {/* Manage */}
               <div className="col-span-1">
-                <div className="flex items-center justify-center gap-3 text-[#7C3AED]">
-                  <button
-                    onClick={() => alert(`Edit ${it.id}`)}
+                <div className="flex items-center justify-center gap-6 text-[#7C3AED]">
+                  {/* ปุ่มแก้ไข -> หน้า edit (แก้เฉพาะข้อมูล location) */}
+                  <Link
+                    href={`/admin/locations/${it.id}/edit`}
                     className="hover:text-[#5c23cf]"
-                    title="Edit"
+                    title="Edit location"
                   >
                     <FiEdit2 />
-                  </button>
+                  </Link>
+
+                  {/* ตัวอย่างลบ */}
                   <button
                     onClick={() => confirm("Delete this location?") && alert(`Delete ${it.id}`)}
                     className="hover:text-[#5c23cf]"
@@ -154,11 +135,10 @@ export default function ManageLocationTable({
         </ul>
       )}
 
-      {/* Pagination (แสดงเฉพาะโหมดแบ่งหน้า) */}
       {!modeAll && totalPages > 1 && (
         <div className="flex items-center justify-between px-4 py-3 border-t text-sm">
           <div className="text-gray-600">
-            Page <b>{page + 1}</b> / {totalPages} &nbsp;•&nbsp; Total: {total}
+            Page <b>{page + 1}</b> / {totalPages} • Total: {total}
           </div>
           <div className="flex gap-2">
             <button

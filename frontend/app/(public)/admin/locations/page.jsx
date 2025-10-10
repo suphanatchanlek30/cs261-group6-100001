@@ -26,12 +26,12 @@ export default function AdminLocationsPage() {
       />
 
       {/* โหมดโหลดทั้งหมด (ตามที่ต้องการ) */}
-      <ManageLocationTable keyword={keyword} modeAll />
+      {/* <ManageLocationTable keyword={keyword} modeAll /> */}
 
-      {/*
-      // ถ้าจะใช้โหมดแบ่งหน้า
+      
+      {/* // ถ้าจะใช้โหมดแบ่งหน้า */}
       <ManageLocationTable keyword={keyword} modeAll={false} pageSize={20} />
-      */}
+     
     </section>
   );
 }

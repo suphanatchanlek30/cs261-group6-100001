@@ -67,3 +67,25 @@ export async function getLocationById(id) {
     };
   }
 }
+
+
+// แก้ไขข้อมูลสถานที่ (PATCH)
+export async function updateLocation(id, payload) {
+  try {
+    const res = await axios.patch(`/locations/${id}`, payload);
+    return { ok: true, data: res.data };
+  } catch (err) {
+    const msg = err?.response?.data?.message || err?.response?.data || err?.message || "อัปเดตไม่สำเร็จ";
+    return { ok: false, message: msg, status: err?.response?.status };
+  }
+}
+// เพิ่มยูนิตใหม่ในสถานที่ (POST)
+export async function createUnit(locationId, payload) {
+  try {
+    const res = await axios.post(`/locations/${locationId}/units`, payload);
+    return { ok: true, data: res.data };
+  } catch (err) {
+    const msg = err?.response?.data?.message || err?.response?.data || err?.message || "เพิ่มยูนิตไม่สำเร็จ";
+    return { ok: false, message: msg, status: err?.response?.status };
+  }
+}
