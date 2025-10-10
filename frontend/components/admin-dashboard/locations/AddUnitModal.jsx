@@ -121,7 +121,7 @@ export default function AddUnitModal({ open, onClose, locationId, onAdded }) {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-5 py-2 border rounded-md text-gray-700 hover:bg-gray-100"
+                            className="px-5 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
                         >
                             ยกเลิก
                         </button>

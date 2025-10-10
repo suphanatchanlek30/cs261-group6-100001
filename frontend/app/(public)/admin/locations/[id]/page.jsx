@@ -62,7 +62,7 @@ export default function LocationDetailPage() {
               onClick={() => router.push(`/admin/locations/${id}/edit`)}
               className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             >
-              แก้ไข location
+              แก้ไข Location
             </button>
             <button
               onClick={() => router.push("/admin/locations")}

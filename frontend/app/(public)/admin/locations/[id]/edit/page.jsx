@@ -51,9 +51,9 @@ export default function EditLocationPage() {
                 <div className="mt-4">
                     <button
                         onClick={() => router.push("/admin/locations")}
-                        className="px-4 py-2 border rounded-md"
+                        className="px-4 py-2 border rounded-md border-gray-300"
                     >
-                        ← Back
+                        ← กลับ
                     </button>
                 </div>
             </div>
@@ -73,9 +73,9 @@ export default function EditLocationPage() {
                     </div>
                     <button
                         onClick={handleCancel}
-                        className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                        className="px-4 py-2 border border-gray-300  rounded-lg hover:bg-gray-50"
                     >
-                        ← Back
+                        ← กลับ
                     </button>
                 </div>
 

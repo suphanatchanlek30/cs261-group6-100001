@@ -89,3 +89,19 @@ export async function createUnit(locationId, payload) {
     return { ok: false, message: msg, status: err?.response?.status };
   }
 }
+
+/** ลบสถานที่ตาม id */
+export async function deleteLocation(id) {
+  try {
+    const res = await axios.delete(`/locations/${id}`);
+    // โค้ดจริงอาจคืน 200 + body หรือ 204 no content (รองรับทั้งคู่)
+    if (res.status === 200 || res.status === 204) {
+      return { ok: true, data: res.data };
+    }
+    return { ok: false, message: `Unexpected status: ${res.status}` };
+  } catch (err) {
+    console.error("❌ deleteLocation error:", err);
+    const msg = err?.response?.data || err?.message || "ลบไม่สำเร็จ";
+    return { ok: false, message: msg };
+  }
+}

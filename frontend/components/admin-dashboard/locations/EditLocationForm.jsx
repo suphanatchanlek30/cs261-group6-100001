@@ -263,7 +263,7 @@ export default function EditLocationForm({ location = {}, onSuccess, onCancel })
                     <button type="button" onClick={onCancel} className="px-5 py-2 rounded-md border border-gray-300 hover:bg-gray-50 text-gray-600">
                         Cancel
                     </button>
-                    <button type="submit" className="px-5 py-2 rounded-md bg-purple-600/90 text-white hover:bg-purple-600">
+                    <button type="submit" className="px-5 py-2 rounded-md bg-[#7C3AED] text-white hover:bg-[#6B21A8]">
                         Save
                     </button>
                 </div>
