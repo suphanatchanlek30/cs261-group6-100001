@@ -26,6 +26,7 @@ public class LocationRepositoryImpl implements LocationRepositoryCustom {
                    cos(radians(l.geo_lng) - radians(?2)) +
                    sin(radians(?1)) * sin(radians(l.geo_lat))
                )) AS distance_km
+                l.is_active
         FROM dbo.locations l
         WHERE (?3 IS NULL OR l.name LIKE ?4 OR l.address_text LIKE ?4)
           AND l.geo_lat IS NOT NULL AND l.geo_lng IS NOT NULL
@@ -77,7 +78,7 @@ public class LocationRepositoryImpl implements LocationRepositoryCustom {
             String img = (String) r[5];
             Double dist = (r[6] instanceof Number n) ? n.doubleValue() : null;
 
-            items.add(new LocationListItem(id, name, addr, la, ln, img, dist));
+            items.add(new LocationListItem(id, name, addr, la, ln, img, dist, (Boolean) r[7]));
         }
         return items;
     }
