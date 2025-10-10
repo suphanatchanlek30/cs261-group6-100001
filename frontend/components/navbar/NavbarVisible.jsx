@@ -11,7 +11,14 @@ export default function NavbarVisible() {
   // หน้าที่ไม่ต้องแสดง navbar
   const hideOn =
     pathname === "/login" ||
-    pathname === "/register" || pathname === "/admin";
+    pathname === "/register" || 
+    pathname === "/admin" || 
+    pathname === "/admin/locations" ||
+    pathname === "/admin/users" ||
+    pathname === "/admin/bookings" ||
+    pathname === "/admin/payments" ||
+    pathname === "/admin/reviews" ||
+    pathname === "/admin-login";
      // เพิ่มหน้าอื่นได้ เช่น || pathname.startsWith("/admin")
 
   if (hideOn) return null;
