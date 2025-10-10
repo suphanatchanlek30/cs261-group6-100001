@@ -19,7 +19,7 @@ export default function AdminHero() {
       <div className="absolute inset-0 bg-black/55" />
 
       {/* โลโก้/ชื่อแบรนด์ด้านบนกึ่งกลาง */}
-      <div className="max-w-3xl mx-auto pt-30 text-center">
+      <div className="max-w-3xl mx-auto pt-30 md:pt-20 text-center">
         <div className="text-white text-4xl sm:text-7xl font-nicomoji drop-shadow-lg tracking-wide">
           Nang Nai Dee
         </div>
