@@ -194,7 +194,7 @@ export default function LocationDetailPage() {
           {loc.units && loc.units.length > 0 ? (
             <div className="grid grid-cols-2 gap-6">
               {loc.units.map((u) => {
-                const isDeleting = deletingUnitIds.has(u.id); // ✅ เช็คกำลังลบ?
+                const isDeleting = deletingUnitIds.has(u.id); // เช็คกำลังลบ?
                 return (
                   <div
                     key={u.id}

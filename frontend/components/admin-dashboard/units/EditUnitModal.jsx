@@ -44,7 +44,7 @@ export default function EditUnitModal({ open, onClose, unit, onUpdated }) {
   };
   const setImageUrl = (url) => setForm((p) => ({ ...p, imageUrl: url }));
 
-  // ✅ สร้าง patch เฉพาะฟิลด์ที่เปลี่ยนจริง
+  // สร้าง patch เฉพาะฟิลด์ที่เปลี่ยนจริง
   const buildPatch = useMemo(() => {
     if (!unit) return () => ({});
     return () => {
@@ -103,84 +103,109 @@ export default function EditUnitModal({ open, onClose, unit, onUpdated }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-6 relative">
-        <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" onClick={onClose}>✕</button>
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto">
+    <div
+      className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl p-6 my-10
+                 flex flex-col max-h-[90vh] overflow-y-auto"
+    >
+      <button
+        className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+        onClick={onClose}
+      >
+        ✕
+      </button>
 
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">แก้ไขยูนิต</h3>
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        แก้ไขยูนิต
+      </h3>
 
-        <form onSubmit={onSubmit} className="space-y-4">
-          {/* อ่านอย่างเดียว: code (หากต้องแก้ code ให้เพิ่ม field ได้) */}
-          {unit?.code && (
-            <Field label="รหัสยูนิต (code)">
-              <input value={unit.code} readOnly className="w-full px-3 py-2 border rounded-lg bg-gray-50 text-gray-500" />
-            </Field>
-          )}
-
-          <Field label="ชื่อยูนิต">
+      <form onSubmit={onSubmit} className="space-y-4">
+        {/* อ่านอย่างเดียว: code */}
+        {unit?.code && (
+          <Field label="รหัสยูนิต (code)">
             <input
-              name="name"
-              value={form.name}
-              onChange={onChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="เช่น โต๊ะริมหน้าต่าง"
+              value={unit.code}
+              readOnly
+              className="w-full px-3 py-2 border rounded-lg bg-gray-50 text-gray-500"
             />
           </Field>
+        )}
 
-          <Field label="รายละเอียดสั้น">
-            <input
-              name="shortDesc"
-              value={form.shortDesc}
-              onChange={onChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="ปลั๊กพร้อม โคมไฟ"
-            />
-          </Field>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="จำนวนที่นั่ง">
-              <input
-                type="number"
-                name="capacity"
-                value={form.capacity}
-                onChange={onChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                min={1}
-              />
-            </Field>
-            <Field label="ราคา/ชั่วโมง (บาท)">
-              <input
-                type="number"
-                step="any"
-                name="priceHourly"
-                value={form.priceHourly}
-                onChange={onChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                min={0}
-              />
-            </Field>
-          </div>
-
-          {/* อัปโหลด/URL รูป */}
-          <ImageUploadInput
-            label="รูปภาพยูนิต"
-            value={form.imageUrl}
-            onChange={setImageUrl}
-            uploadFolder="nangnaidee/units"
-            rounded="rounded-xl"
-            hint="อัปโหลดไฟล์หรือวาง URL ได้"
+        <Field label="ชื่อยูนิต">
+          <input
+            name="name"
+            value={form.name}
+            onChange={onChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+            placeholder="เช่น โต๊ะริมหน้าต่าง"
           />
+        </Field>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-5 py-2 border rounded-md hover:bg-gray-50">ยกเลิก</button>
-            <button type="submit" disabled={saving} className="px-5 py-2 bg-[#7C3AED] text-white rounded-md hover:bg-[#6B21A8] disabled:opacity-50">
-              {saving ? "กำลังบันทึก..." : "บันทึก"}
-            </button>
-          </div>
-        </form>
-      </div>
+        <Field label="รายละเอียดสั้น">
+          <input
+            name="shortDesc"
+            value={form.shortDesc}
+            onChange={onChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+            placeholder="ปลั๊กพร้อม โคมไฟ"
+          />
+        </Field>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="จำนวนที่นั่ง">
+            <input
+              type="number"
+              name="capacity"
+              value={form.capacity}
+              onChange={onChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              min={1}
+            />
+          </Field>
+          <Field label="ราคา/ชั่วโมง (บาท)">
+            <input
+              type="number"
+              step="any"
+              name="priceHourly"
+              value={form.priceHourly}
+              onChange={onChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              min={0}
+            />
+          </Field>
+        </div>
+
+        {/* รูปภาพ */}
+        <ImageUploadInput
+          label="รูปภาพยูนิต"
+          value={form.imageUrl}
+          onChange={setImageUrl}
+          uploadFolder="nangnaidee/units"
+          rounded="rounded-xl"
+          hint="อัปโหลดไฟล์หรือวาง URL ได้"
+        />
+
+        {/* ปุ่ม */}
+        <div className="flex justify-end gap-3 pt-2 sticky bottom--100 bg-white py-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50"
+          >
+            ยกเลิก
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-5 py-2 bg-[#7C3AED] text-white rounded-md hover:bg-[#6B21A8] disabled:opacity-50"
+          >
+            {saving ? "กำลังบันทึก..." : "บันทึก"}
+          </button>
+        </div>
+      </form>
     </div>
-  );
+  </div>
+);
 }
 
 function Field({ label, children }) {

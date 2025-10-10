@@ -140,7 +140,7 @@ export default function AddLocationModal({ show, onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* 🌍 Map Picker */}
+          {/* Map Picker */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               เลือกตำแหน่งบนแผนที่

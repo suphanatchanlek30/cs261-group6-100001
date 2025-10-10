@@ -18,7 +18,7 @@ export default function ManageLocationTable({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [deletingIds, setDeletingIds] = useState(new Set()); // ✅ กันกดซ้ำ + ใส่สถานะกำลังลบ
+  const [deletingIds, setDeletingIds] = useState(new Set()); // กันกดซ้ำ + ใส่สถานะกำลังลบ
 
   const q = useMemo(() => keyword?.trim() || undefined, [keyword]);
 
@@ -55,7 +55,7 @@ export default function ManageLocationTable({
     [modeAll, total, pageSize]
   );
 
-  // ✅ ลบแบบ Optimistic: ตัดออกก่อน แล้วค่อยยิง API เบื้องหลัง
+  // ลบแบบ Optimistic: ตัดออกก่อน แล้วค่อยยิง API เบื้องหลัง
   const handleDelete = async (id, name) => {
     if (deletingIds.has(id)) return; // กันเผลอกดซ้ำ
 
@@ -72,7 +72,7 @@ export default function ManageLocationTable({
     });
     if (!result.isConfirmed) return;
 
-    // ✅ เก็บของเดิมไว้เผื่อกู้คืน + ซ่อนแถวทันที
+    // เก็บของเดิมไว้เผื่อกู้คืน + ซ่อนแถวทันที
     const backup = items;
     const next = backup.filter((x) => x.id !== id);
     setItems(next);
@@ -81,11 +81,11 @@ export default function ManageLocationTable({
     try {
       const { ok, message } = await deleteLocation(id); // รองรับ 200/204
       if (!ok) {
-        // ❌ พัง → กู้คืนแถวเดิม
+        // พัง → กู้คืนแถวเดิม
         setItems(backup);
         throw new Error(String(message || "ลบไม่สำเร็จ"));
       }
-      // ✅ สำเร็จ → toast เร็ว ๆ
+      // สำเร็จ → toast เร็ว ๆ
       Swal.fire({
         icon: "success",
         title: "ลบสำเร็จ",
@@ -105,6 +105,7 @@ export default function ManageLocationTable({
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+       <div className="overflow-x-auto">
       <div className="grid grid-cols-12 px-4 py-3 text-sm font-semibold text-gray-800 border-b border-gray-200">
         <div className="col-span-2">Image</div>
         <div className="col-span-4">Place name</div>
@@ -130,9 +131,9 @@ export default function ManageLocationTable({
                   isDeleting ? "opacity-50 pointer-events-none" : "hover:bg-gray-50"
                 }`}
               >
-                <div className="col-span-2">
+                <div className="sm:col-span-2 flex justify-center sm:justify-start">
                   {it.coverImageUrl ? (
-                    <div className="relative w-40 h-16 rounded-md overflow-hidden">
+                    <div className="relative w-28 h-16 sm:w-18 md:w-20 xl:w-50 rounded-md overflow-hidden">
                       <img src={it.coverImageUrl} alt={it.name} className="w-full h-full object-cover" />
                     </div>
                   ) : (
@@ -143,7 +144,7 @@ export default function ManageLocationTable({
                 </div>
 
                 {/* คลิกชื่อ → หน้า detail */}
-                <div className="col-span-4">
+                <div className="sm:col-span-4">
                   <Link
                     href={`/admin/locations/${it.id}`}
                     className="font-medium text-[#7C3AED] hover:text-[#7C3AED] transition underline"
@@ -154,7 +155,7 @@ export default function ManageLocationTable({
                   <div className="text-xs text-gray-400">id : {it.id}</div>
                 </div>
 
-                <div className="col-span-4 text-gray-600">{it.address}</div>
+                <div className="sm:col-span-4 text-gray-600 text-sm flex wrap">{it.address}</div>
 
                 <div className="col-span-1 text-center">
                   {(it.isActive ?? it.active) ? (
@@ -169,7 +170,7 @@ export default function ManageLocationTable({
                 </div>
 
                 <div className="col-span-1">
-                  <div className="flex items-center justify-center gap-6 text-[#7C3AED]">
+                  <div className="flex items-center justify-center gap-2 md:gap-4 text-[#7C3AED]">
                     <Link
                       href={`/admin/locations/${it.id}/edit`}
                       className="hover:text-[#5c23cf]"
@@ -188,11 +189,13 @@ export default function ManageLocationTable({
                     </button>
                   </div>
                 </div>
+                
               </li>
             );
           })}
         </ul>
       )}
+      </div>
 
       {!modeAll && totalPages > 1 && (
         <div className="flex items-center justify-between px-4 py-3 border-t text-sm">
