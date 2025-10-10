@@ -9,6 +9,7 @@ import { GoClock } from "react-icons/go";
 import { MdContentCopy } from "react-icons/md";
 
 
+
 const BookingCard = ({ status, locationName, locationUnitName, location, rating, reviewCount, seats, isMute, isWifi, date, time, bookingCode }) => (
     <>
         <div className="flex flex-row rounded-2xl w-full h-50 mt-10 z-10 shadow relative gap-4
@@ -51,9 +52,8 @@ const BookingCard = ({ status, locationName, locationUnitName, location, rating,
                         <MdOutlineStar key={i} size={20} className="text-amber-400" />
                     ))}
 
-
-
                     <p className="ml-6 text-sm text-gray-400">({reviewCount} reviews)</p>
+
                 </div>
 
                 <div className="flex flex-row gap-4 items-center">
@@ -134,10 +134,13 @@ const BookingCard = ({ status, locationName, locationUnitName, location, rating,
     </>
 )
 
-
-
-
 export default function MyBookingPage() {
+
+    const [bookingStatus, setBookingStatus] = useState('all');
+    const [isSelected, setIsSelected] = useState(false);
+
+
+
     return (
         <div className="flex flex-col w-full h-screen p-20 pl-72 pr-95 -mt-5">
 
@@ -145,89 +148,200 @@ export default function MyBookingPage() {
 
             <div className="flex flex-row gap-3">
 
-                <div className="border border-purple-600 text-purple-600 mt-5 p-2 rounded-xl transition-colors duration-500 cursor-pointer
-                hover:bg-purple-400 hover:border-purple-400 hover:text-white">
+                <div className={ `border ${isSelected && bookingStatus === 'pending'?"bg-purple-400 text-white border-purple-400":"bg-white text-purple-600 border-purple-600"} mt-5 p-2 rounded-xl transition-colors duration-500 cursor-pointer
+                hover:bg-purple-400 hover:border-purple-400 hover:text-white `}
+                onClick={(()=>{setBookingStatus('pending'); setIsSelected(true);})}>
                     <p className="text-sm">Pending payment</p>
                 </div>
 
-                <div className="border border-purple-600 text-purple-600 mt-5 p-2 rounded-xl transition-colors duration-500 cursor-pointer
-                hover:bg-purple-400 hover:border-purple-400 hover:text-white">
+                <div className={ `border ${isSelected && bookingStatus === 'hold'?"bg-purple-400 text-white border-purple-400":"bg-white text-purple-600 border-purple-600"} mt-5 p-2 rounded-xl transition-colors duration-500 cursor-pointer
+                hover:bg-purple-400 hover:border-purple-400 hover:text-white `}
+                onClick={(()=>{setBookingStatus('hold'); setIsSelected(true);})}>
                     <p className="text-sm">Waiting for approval</p>
                 </div>
 
-                <div className="border border-purple-600 text-purple-600 mt-5 p-2 rounded-xl transition-colors duration-500 cursor-pointer
-                hover:bg-purple-400 hover:border-purple-400 hover:text-white">
+                <div className={ `border ${isSelected && bookingStatus === 'confirm'?"bg-purple-400 text-white border-purple-400":"bg-white text-purple-600 border-purple-600"} mt-5 p-2 rounded-xl transition-colors duration-500 cursor-pointer
+                hover:bg-purple-400 hover:border-purple-400 hover:text-white `}
+                onClick={(()=>{setBookingStatus('confirm'); setIsSelected(true);})}>
                     <p className="text-sm">Success</p>
                 </div>
 
-                <div className="border border-purple-600 text-purple-600 mt-5 p-2 rounded-xl transition-colors duration-500 cursor-pointer
-                hover:bg-purple-400 hover:border-purple-400 hover:text-white">
+                <div className={ `border ${isSelected && bookingStatus === 'cancel'?"bg-purple-400 text-white border-purple-400":"bg-white text-purple-600 border-purple-600"} mt-5 p-2 rounded-xl transition-colors duration-500 cursor-pointer
+                hover:bg-purple-400 hover:border-purple-400 hover:text-white `}
+                onClick={(()=>{setBookingStatus('cancel'); setIsSelected(true);})}>
                     <p className="text-sm">Cancel</p>
                 </div>
 
             </div>
 
-            {/*status, locationName, locationUnitName, location, rating, seats, isMute, isWifi, date, time, bookingCode] */}
-            <BookingCard
-                status="confirmed"
-                locationName="The Meal Co-Op"
-                locationUnitName="T-06 · Table 6"
-                rating={5}
-                reviewCount={584}
-                location="Samyan Mitrtown, 2nd Floor"
-                seats={2}
-                isMute={true}
-                isWifi={true}
-                date="16/06/2568"
-                time="09:00-12:00(3 hours)"
-                bookingCode="meal66"
-            />
+            {bookingStatus === "all" && (
+                <>
+                    <BookingCard
+                        status="confirmed"
+                        locationName="The Meal Co-Op"
+                        locationUnitName="T-06 · Table 6"
+                        rating={5}
+                        reviewCount={584}
+                        location="Samyan Mitrtown, 2nd Floor"
+                        seats={2}
+                        isMute={true}
+                        isWifi={true}
+                        date="16/06/2568"
+                        time="09:00-12:00(3 hours)"
+                        bookingCode="meal66"
+                    />
 
-            <BookingCard
-                status="cancelled"
-                locationName="The Meal Co-Op"
-                locationUnitName="T-06 · Table 6"
-                rating={5}
-                reviewCount={584}
-                location="Samyan Mitrtown, 2nd Floor"
-                seats={2}
-                isMute={true}
-                isWifi={true}
-                date="16/06/2568"
-                time="09:00-12:00(3 hours)"
-                bookingCode="meal66"
-            />
+                    <BookingCard
+                        status="cancelled"
+                        locationName="The Meal Co-Op"
+                        locationUnitName="T-06 · Table 6"
+                        rating={5}
+                        reviewCount={584}
+                        location="Samyan Mitrtown, 2nd Floor"
+                        seats={2}
+                        isMute={true}
+                        isWifi={true}
+                        date="16/06/2568"
+                        time="09:00-12:00(3 hours)"
+                        bookingCode="meal66"
+                    />
 
-            <BookingCard
-                status="pending"
-                locationName="The Meal Co-Op"
-                locationUnitName="T-06 · Table 6"
-                rating={5}
-                reviewCount={584}
-                location="Samyan Mitrtown, 2nd Floor"
-                seats={2}
-                isMute={true}
-                isWifi={true}
-                date="16/06/2568"
-                time="09:00-12:00(3 hours)"
-                bookingCode="meal66"
-            />
+                    <BookingCard
+                        status="pending"
+                        locationName="The Meal Co-Op"
+                        locationUnitName="T-06 · Table 6"
+                        rating={5}
+                        reviewCount={584}
+                        location="Samyan Mitrtown, 2nd Floor"
+                        seats={2}
+                        isMute={true}
+                        isWifi={true}
+                        date="16/06/2568"
+                        time="09:00-12:00(3 hours)"
+                        bookingCode="meal66"
+                    />
 
-            <BookingCard
-                status="hold"
-                locationName="The Meal Co-Op"
-                locationUnitName="T-06 · Table 6"
-                rating={5}
-                reviewCount={584}
-                location="Samyan Mitrtown, 2nd Floor"
-                seats={2}
-                isMute={true}
-                isWifi={true}
-                date="16/06/2568"
-                time="09:00-12:00(3 hours)"
-                bookingCode="meal66"
-            />
+                    <BookingCard
+                        status="hold"
+                        locationName="The Meal Co-Op"
+                        locationUnitName="T-06 · Table 6"
+                        rating={5}
+                        reviewCount={584}
+                        location="Samyan Mitrtown, 2nd Floor"
+                        seats={2}
+                        isMute={true}
+                        isWifi={true}
+                        date="16/06/2568"
+                        time="09:00-12:00(3 hours)"
+                        bookingCode="meal66"
+                    />
+                </>
+            )}
 
+
+            {bookingStatus === "hold" && (
+                <>
+                    <BookingCard
+                        status="hold"
+                        locationName="The Meal Co-Op"
+                        locationUnitName="T-06 · Table 6"
+                        rating={5}
+                        reviewCount={584}
+                        location="Samyan Mitrtown, 2nd Floor"
+                        seats={2}
+                        isMute={true}
+                        isWifi={true}
+                        date="16/06/2568"
+                        time="09:00-12:00(3 hours)"
+                        bookingCode="meal66"
+                    />
+                </>
+            )}
+
+            {bookingStatus === "pending" && (
+                <>
+                    <BookingCard
+                        status="pending"
+                        locationName="The Meal Co-Op"
+                        locationUnitName="T-06 · Table 6"
+                        rating={5}
+                        reviewCount={584}
+                        location="Samyan Mitrtown, 2nd Floor"
+                        seats={2}
+                        isMute={true}
+                        isWifi={true}
+                        date="16/06/2568"
+                        time="09:00-12:00(3 hours)"
+                        bookingCode="meal66"
+                    />
+                </>
+            )}
+
+            {bookingStatus === "confirm" && (
+                <>
+                    <BookingCard
+                        status="confirmed"
+                        locationName="The Meal Co-Op"
+                        locationUnitName="T-06 · Table 6"
+                        rating={5}
+                        reviewCount={584}
+                        location="Samyan Mitrtown, 2nd Floor"
+                        seats={2}
+                        isMute={true}
+                        isWifi={true}
+                        date="16/06/2568"
+                        time="09:00-12:00(3 hours)"
+                        bookingCode="meal66"
+                    />
+                </>
+            )}
+
+            {bookingStatus === "cancel" && (
+                <>
+                    <BookingCard
+                        status="cancelled"
+                        locationName="The Meal Co-Op"
+                        locationUnitName="T-06 · Table 6"
+                        rating={5}
+                        reviewCount={584}
+                        location="Samyan Mitrtown, 2nd Floor"
+                        seats={2}
+                        isMute={true}
+                        isWifi={true}
+                        date="16/06/2568"
+                        time="09:00-12:00(3 hours)"
+                        bookingCode="meal66"
+                    />
+                </>
+            )}
+
+
+
+            <div className="flex flex-row gap-4 p-2 mt-15 justify-center pb-20">
+
+                <div className="w-10 h-10 rounded bg-white border-3 border-gray-400 flex justify-center items-center cursor-pointer">
+                    <h1 className="text-xl text-gray-400 text-center font-bold">&lt;&lt;</h1>
+                </div>
+
+
+                <div className="w-10 h-10 rounded bg-white border-3 border-gray-400 flex justify-center items-center cursor-pointer">
+                    <h1 className="text-xl text-gray-400 text-center font-bold">&lt;</h1>
+                </div>
+
+                <div className="w-10 h-10 rounded bg-purple-400 flex justify-center items-center cursor-pointer">
+                    <h1 className="text-xl text-white text-center font-semibold">1</h1>
+                </div>
+
+                <div className="w-10 h-10 rounded bg-white border-3 border-gray-400 flex justify-center items-center cursor-pointer">
+                    <h1 className="text-xl text-gray-400 text-center font-bold">&gt;</h1>
+                </div>
+
+                <div className="w-10 h-10 rounded bg-white border-3 border-gray-400 flex justify-center items-center cursor-pointer">
+                    <h1 className="text-xl text-gray-400 text-center font-bold">&gt;&gt;</h1>
+                </div>
+
+
+            </div>
 
         </div>
     );
