@@ -1,4 +1,4 @@
-// components/admin-dashboard/ManageLocationTable.jsx
+// components/admin-dashboard/locations/ManageLocationTable.jsx
 
 // ตารางตัวอย่าง (image/name/address/time/manage)
 
