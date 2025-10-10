@@ -8,7 +8,7 @@
  * - มี Topbar ด้านบน + Sidebar ซ้าย + Content
  * - ใส่ guard เบื้องต้น: ถ้าไม่ authed → เด้ง login
  */
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminTopbar from "./AdminTopbar";
 import AdminSidebar from "./AdminSidebar";
@@ -16,27 +16,27 @@ import { isAuthenticated } from "@/utils/authClient";
 
 export default function AdminShell({ children }) {
   const router = useRouter();
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    // guard: ถ้าไม่ได้ล็อกอิน → ไปหน้า login
     if (!isAuthenticated()) {
-        router.replace("/admin-login?next=/admin/dashboard");
+      router.replace("/admin-login?next=/admin/dashboard");
     }
   }, [router]);
 
   return (
     <div className="min-h-screen bg-[#F7F7FB]">
-      {/* Topbar */}
       <AdminTopbar />
 
-      {/* Content area with Sidebar */}
-      <div className="flex">
-        {/* Sidebar (fixed width) */}
-        <AdminSidebar />
+      {/* Sidebar แบบ fixed + ค้างใต้ Topbar */}
+      <AdminSidebar isCollapsed={collapsed} setIsCollapsed={setCollapsed} />
 
-        {/* Main content */}
-        <main className="flex-1 p-5 lg:p-8">{children}</main>
-      </div>
+      {/* เนื้อหาเลื่อน และเว้นซ้ายตามความกว้าง sidebar */}
+      <main
+        className={`${collapsed ? "ml-16" : "ml-[250px]"} p-5 lg:p-8 min-h-[calc(100vh-4rem)]`}
+      >
+        {children}
+      </main>
     </div>
   );
 }
