@@ -1,3 +1,4 @@
+// app/(public)/admin/locations/[id]/page.jsx
 "use client";
 
 import { useEffect, useState } from "react";

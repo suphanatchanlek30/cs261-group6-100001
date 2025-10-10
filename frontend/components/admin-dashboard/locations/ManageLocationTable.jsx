@@ -1,3 +1,5 @@
+// components/admin-dashboard/locations/ManageLocationTable.jsx
+
 "use client";
 
 import Link from "next/link";

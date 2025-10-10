@@ -16,7 +16,7 @@ export default function AdminLocationsPage() {
   return (
     <section className="space-y-4">
       <h1 className="text-2xl font-bold text-gray-800">Manage Location</h1>
-      <p className="text-gray-600">หน้านี้ไว้จัดการ Location</p>
+      <p className="text-gray-600">เพิ่ม แก้ไข หรือลบข้อมูลสถานที่ในระบบได้จากหน้านี้</p>
 
       <PageHeader
         title="Manage Location"

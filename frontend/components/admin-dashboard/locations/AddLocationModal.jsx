@@ -178,7 +178,7 @@ export default function AddLocationModal({ show, onClose, onSuccess }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 rounded-md border text-gray-700 hover:bg-gray-100"
+              className="px-5 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100"
             >
               Cancel
             </button>

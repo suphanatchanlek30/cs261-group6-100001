@@ -1,3 +1,5 @@
+// app/(public)/admin/locations/[id]/edit/page.jsx
+
 "use client";
 
 import { useEffect, useState } from "react";
