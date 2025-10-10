@@ -140,7 +140,7 @@ export default function AddLocationModal({ show, onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* 🌍 Map Picker */}
+          {/* Map Picker */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               เลือกตำแหน่งบนแผนที่
@@ -178,7 +178,7 @@ export default function AddLocationModal({ show, onClose, onSuccess }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 rounded-md border text-gray-700 hover:bg-gray-100"
+              className="px-5 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100"
             >
               Cancel
             </button>
