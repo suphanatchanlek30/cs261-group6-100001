@@ -1,4 +1,5 @@
 // app/(public)/admin/locations/[id]/edit/page.jsx
+// แก้ไขสถานที่
 
 "use client";
 
@@ -53,7 +54,7 @@ export default function EditLocationPage() {
                 <div className="mt-4">
                     <button
                         onClick={() => router.push("/admin/locations")}
-                        className="px-4 py-2 border rounded-md border-gray-300"
+                        className="px-4 py-2 border rounded-md border-gray-200 text-gray-700"
                     >
                         ← กลับ
                     </button>
@@ -66,7 +67,7 @@ export default function EditLocationPage() {
         <div className="min-h-screen bg-[linear-gradient(180deg,#fafafa,rgba(250,250,250,0))] py-8">
             <section className="max-w-3xl mx-auto bg-white shadow-sm rounded-xl p-8 mt-2 border border-gray-100">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6 pb-3 border-b">
+                <div className="flex items-center justify-between mb-6 pb-3 border-b border-gray-300">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800">Edit Location</h1>
                         <p className="text-gray-500 text-sm">
@@ -75,7 +76,7 @@ export default function EditLocationPage() {
                     </div>
                     <button
                         onClick={handleCancel}
-                        className="px-4 py-2 border border-gray-300  rounded-lg hover:bg-gray-50"
+                        className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50"
                     >
                         ← กลับ
                     </button>
