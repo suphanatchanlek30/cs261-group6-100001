@@ -55,7 +55,7 @@ public class LocationQueryService {
 
         List<LocationListItem> items = pageData.getContent().stream()
                 .map(l -> new LocationListItem(
-                        l.getId(), l.getName(), l.getAddressText(), l.getGeoLat(), l.getGeoLng(), l.getCoverImageUrl(), null
+                        l.getId(), l.getName(), l.getAddressText(), l.getGeoLat(), l.getGeoLng(), l.getCoverImageUrl(), null, l.isActive()
                 )).toList();
 
         return new LocationListResponse(items, p, s, pageData.getTotalElements());
