@@ -18,6 +18,7 @@ export default function NavbarVisible() {
     pathname === "/admin/bookings" ||
     pathname === "/admin/payments" ||
     pathname === "/admin/reviews" ||
+    pathname === "/admin/locations/new" ||
     pathname === "/admin-login";
      // เพิ่มหน้าอื่นได้ เช่น || pathname.startsWith("/admin")
 

@@ -25,7 +25,13 @@ export default function AdminLocationsPage() {
         onAdd={handleAdd}
       />
 
-      <ManageLocationTable keyword={keyword} />
+      {/* โหมดโหลดทั้งหมด (ตามที่ต้องการ) */}
+      <ManageLocationTable keyword={keyword} modeAll />
+
+      {/*
+      // ถ้าจะใช้โหมดแบ่งหน้า
+      <ManageLocationTable keyword={keyword} modeAll={false} pageSize={20} />
+      */}
     </section>
   );
 }

@@ -30,7 +30,7 @@ export default function MapPinModal({ open, onClose, onPick }) {
   const [loading, setLoading] = useState(true);
   const [mapKey, setMapKey] = useState(Date.now());
 
-  // ✅ ขอสิทธิ์ตำแหน่งเมื่อเปิด modal
+  // ขอสิทธิ์ตำแหน่งเมื่อเปิด modal
   useEffect(() => {
     if (!open) return;
     setLoading(true);
@@ -68,7 +68,7 @@ export default function MapPinModal({ open, onClose, onPick }) {
       })
     : null;
 
-  // ✅ จับคลิกบนแผนที่เพื่อเปลี่ยนหมุด
+  // จับคลิกบนแผนที่เพื่อเปลี่ยนหมุด
   const ClickToSet = () => {
     useMapEvents({
       click(e) {
