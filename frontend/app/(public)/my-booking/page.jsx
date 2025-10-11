@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import Swal from "sweetalert2";
 import FilterTabs from "@/components/mybooking/FilterTabs";
 import BookingCard from "@/components/mybooking/BookingCard";
-import Pagination from "@/components/common/Pagination";
+// ใช้ Pagination แบบเดียวกับหน้า Search
+import Pagination from "@/components/search/Pagination";
 import EmptyState from "@/components/common/EmptyState";
 import {
   getMyBookingsOverview,
@@ -16,7 +17,7 @@ import {
 export default function MyBookingPage() {
   // tab: HOLD | PENDING_REVIEW | CONFIRMED | CANCELLED | EXPIRED | undefined
   const [tab, setTab] = useState();
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(0);   // 0-based
   const [size] = useState(10);
 
   const [loading, setLoading] = useState(true);
@@ -52,7 +53,7 @@ export default function MyBookingPage() {
 
   const onTabChange = (next) => {
     setTab(next);
-    setPage(0);
+    setPage(0); // เปลี่ยนแท็บแล้วรีเซ็ตหน้า
   };
 
   const onCancelBooking = async (bookingId) => {
@@ -80,11 +81,7 @@ export default function MyBookingPage() {
 
     const { ok, message } = await cancelBooking(bookingId, reason);
     if (!ok) {
-      await Swal.fire(
-        "Cancel failed",
-        message || "ไม่สามารถยกเลิกได้",
-        "error"
-      );
+      await Swal.fire("Cancel failed", message || "ไม่สามารถยกเลิกได้", "error");
       return;
     }
     await Swal.fire("Cancelled", "", "success");
@@ -92,6 +89,17 @@ export default function MyBookingPage() {
   };
 
   const items = useMemo(() => data?.items ?? [], [data]);
+
+  // คำนวณ totalPages ให้ตรงกับสไตล์ Pagination ของหน้า Search
+  const totalPages = useMemo(() => {
+    if (typeof data?.totalPages === "number") {
+      return Math.max(1, data.totalPages);
+    }
+    if (typeof data?.total === "number") {
+      return Math.max(1, Math.ceil(data.total / size));
+    }
+    return 1;
+  }, [data, size]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
@@ -114,12 +122,7 @@ export default function MyBookingPage() {
           const rev = row.review || {};
 
           const key = b.id || `row-${page}-${idx}`;
-
-          const { dateText, timeText } = formatRangeLocal(
-            b.startTime,
-            b.endTime
-          );
-
+          const { dateText, timeText } = formatRangeLocal(b.startTime, b.endTime);
           const cover = u.imageUrl || l.coverImageUrl || "/placeholder.jpg";
           const unitLabel = u.code ? `${u.code} · ${u.name}` : u.name;
 
@@ -134,7 +137,7 @@ export default function MyBookingPage() {
               rating={rev.avgRating ?? 0}
               reviewCount={rev.ratingCount ?? 0}
               capacity={u.capacity ?? 1}
-              quiet={false /* ไม่มีใน overview */}
+              quiet={false}
               wifi={!!u.shortDesc?.toLowerCase?.().includes("wifi")}
               dateText={dateText}
               timeText={timeText}
@@ -144,24 +147,17 @@ export default function MyBookingPage() {
               canPay={!!act.canPay}
               canCancel={!!act.canCancel}
               canReview={!!rev.canReview}
-              onPay={() =>
-                (window.location.href = `/checkout?bookingId=${b.id}`)
-              }
+              onPay={() => (window.location.href = `/checkout?bookingId=${b.id}`)}
               onCancel={() => onCancelBooking(b.id)}
-              onReview={() =>
-                (window.location.href = `/bookings/${b.id}/review`)
-              }
+              onReview={() => (window.location.href = `/bookings/${b.id}/review`)}
             />
           );
         })}
       </div>
 
+      {/* ใช้ Pagination แบบเดียวกับหน้า Search: รับ { page, totalPages, setPage } */}
       {items.length > 0 && (
-        <Pagination
-          page={data.page}
-          totalPages={data.totalPages}
-          onPageChange={(p) => setPage(p)}
-        />
+        <Pagination page={page} totalPages={totalPages} setPage={setPage} />
       )}
     </div>
   );
