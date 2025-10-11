@@ -49,7 +49,7 @@ export default function SearchResultRow({ item }) {
                         {item?.name}
                     </Link>
 
-                    <div className="mt-1.5 flex flex-col items-start gap-x-6 gap-y-2 text-[13px] text-gray-600">
+                    <div className="mt-2 flex flex-col items-start gap-x-6 gap-y-3 text-[13px] text-gray-600">
                         <span className="inline-flex items-center gap-1 font-medium"><FiMapPin className="text-gray-600" /> {item.address || "-"}</span>
                         <div className="flex flex-wrap gap-0 text-gray-600 items-center">
                             <span className="inline-flex items-center gap-2 font-medium"><FiClock className="text-gray-600" /> 24 hour</span>
