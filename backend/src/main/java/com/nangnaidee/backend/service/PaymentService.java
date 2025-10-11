@@ -126,7 +126,7 @@ public class PaymentService {
             throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
         }
 
-        String token = authorizationHeader.substring("Bearer".length()).trim();
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
         Integer userId;
 
         try {
@@ -156,6 +156,12 @@ public class PaymentService {
         } catch (Exception e) {
             throw new BadRequestException("รูปแบบ URL ไม่ถูกต้อง");
         }
+
+        payment.setProofUrl(url);
+
+        booking.setStatus("PENDING_REVIEW");
+
+        bookingRepository.save(booking);
 
         payment.setProofUrl(req.getProofUrl());
         Payment savedPayment = paymentRepository.save(payment);

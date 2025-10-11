@@ -19,7 +19,13 @@ import org.springframework.stereotype.Service;
 import com.nangnaidee.backend.dto.BookingOverviewItem.*;
 import com.nangnaidee.backend.dto.BookingOverviewItem;
 import com.nangnaidee.backend.dto.BookingOverviewResponse;
-
+import com.nangnaidee.backend.dto.BookingDetailResponse;
+import com.nangnaidee.backend.dto.BookingOverviewItem;
+import com.nangnaidee.backend.dto.BookingOverviewItem.*;
+import com.nangnaidee.backend.repo.BookingDetailRepository;
+import com.nangnaidee.backend.dto.BookingDetailResponse;
+import com.nangnaidee.backend.repo.BookingDetailRepository;
+import java.time.ZoneOffset;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -35,6 +41,63 @@ public class BookingService {
     private final LocationUnitRepository unitRepository;
     private final AuthService authService;
     private final BookingOverviewRepository bookingOverviewRepository;
+    private final BookingDetailRepository bookingDetailRepository;
+
+    // อัปเดต: รองรับ UUID ทั้งที่เป็น UUID/String/byte[]/Object[]
+    private java.util.UUID asUuid(Object o) {
+        if (o == null) return null;
+        if (o instanceof java.util.UUID u) return u;
+        if (o instanceof String s) return java.util.UUID.fromString(s);
+        if (o instanceof byte[] bytes) return java.util.UUID.nameUUIDFromBytes(bytes);
+        if (o instanceof Object[] arr && arr.length > 0) return asUuid(arr[0]);
+        throw new IllegalStateException("Unsupported UUID type: " + o.getClass());
+    }
+
+    // อัปเดต: รองรับ Timestamp/LocalDateTime/OffsetDateTime
+    private java.time.OffsetDateTime asUtc(Object o) {
+        if (o == null) return null;
+        if (o instanceof java.sql.Timestamp ts) {
+            return ts.toInstant().atOffset(java.time.ZoneOffset.UTC);
+        }
+        if (o instanceof java.time.LocalDateTime ldt) {
+            return ldt.atOffset(java.time.ZoneOffset.UTC);
+        }
+        if (o instanceof java.time.OffsetDateTime odt) {
+            return odt.withOffsetSameInstant(java.time.ZoneOffset.UTC);
+        }
+        throw new IllegalStateException("Unsupported datetime type: " + o.getClass());
+    }
+
+    private java.math.BigDecimal asBigDecimal(Object o) {
+        if (o == null) return null;
+        if (o instanceof java.math.BigDecimal bd) return bd;
+        if (o instanceof Number n) return java.math.BigDecimal.valueOf(n.doubleValue());
+        throw new IllegalStateException("Unsupported BigDecimal type: " + o.getClass());
+    }
+    private Integer asInt(Object o) {
+        if (o == null) return null;
+        if (o instanceof Number n) return n.intValue();
+        throw new IllegalStateException("Unsupported Integer type: " + o.getClass());
+    }
+    private Long asLong(Object o) {
+        if (o == null) return null;
+        if (o instanceof Number n) return n.longValue();
+        throw new IllegalStateException("Unsupported Long type: " + o.getClass());
+    }
+    private Double asDouble(Object o) {
+        if (o == null) return null;
+        if (o instanceof Number n) return n.doubleValue();
+        throw new IllegalStateException("Unsupported Double type: " + o.getClass());
+    }
+
+    // เพิ่มใหม่: กันเคส native query คืนค่าแบบซ้อน Object[][] (แถวเดียวแต่ห่อ)
+    private Object[] flattenRow(Object[] row) {
+        if (row != null && row.length == 1 && row[0] instanceof Object[]) {
+            return (Object[]) row[0];
+        }
+        return row;
+    }
+
 
     public CreateBookingResponse create(String authorizationHeader, CreateBookingRequest req) {
         // validate นาทีต้องเป็น 0
@@ -257,5 +320,94 @@ public class BookingService {
                 resultPage.getTotalElements(),
                 resultPage.getTotalPages()
         );
+    }
+
+    public BookingDetailResponse getBookingDetailDto(String authorizationHeader, UUID bookingId) {
+        MeResponse me = authService.me(authorizationHeader);
+
+        // เช็คว่ามี booking จริง
+        Booking bookingEntity = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบการจอง"));
+
+        // owner or ADMIN เท่านั้น
+        boolean isAdmin = me.getRoles().contains("ADMIN");
+        boolean isOwner = bookingEntity.getUserId().equals(me.getId());
+        if (!isAdmin && !isOwner) {
+            throw new ForbiddenException("คุณไม่มีสิทธิ์ดูการจองนี้");
+        }
+
+        Object[] row = bookingDetailRepository.findDetailById(bookingId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบรายละเอียดการจอง"));
+
+        // สำคัญ: คลาย nested array ก่อน map
+        row = flattenRow(row);
+
+        int i = 0;
+
+        // booking
+        var bId        = asUuid(row[i++]);
+        var bStatus    = (String) row[i++];
+        var bCode      = (String) row[i++];
+        var bStartZ    = asUtc(row[i++]);
+        var bEndZ      = asUtc(row[i++]);
+        var bHours     = asInt(row[i++]);
+        var bTotal     = asBigDecimal(row[i++]);
+
+        // unit
+        var uId        = asUuid(row[i++]);
+        var uCode      = (String) row[i++];
+        var uName      = (String) row[i++];
+        var uImg       = (String) row[i++];
+        var uCap       = asInt(row[i++]);
+        var uShortDesc = (String) row[i++];
+
+        // location
+        var lId        = asUuid(row[i++]);
+        var lName      = (String) row[i++];
+        var lAddr      = (String) row[i++];
+        var lLat       = asDouble(row[i++]);
+        var lLng       = asDouble(row[i++]);
+        var lCover     = (String) row[i++];
+
+        // payment
+        var pId        = asUuid(row[i++]);      // may be null
+        var pStatus    = (String) row[i++];
+        var pProof     = (String) row[i++];
+
+        // rating agg
+        var avgRating  = row[i] == null ? null : asDouble(row[i]); i++;
+        var reviewCnt  = row[i] == null ? null : asLong(row[i]);   i++;
+
+        // my review id (ถ้ามี)
+        var myReviewId = asUuid(row[i++]);      // may be null
+
+        var booking = new BookingDetailResponse.BookingDto(
+                bId, bStatus, bCode, bStartZ, bEndZ, bHours, bTotal
+        );
+        var unit = new BookingDetailResponse.UnitDto(
+                uId, uCode, uName, uImg, uCap, uShortDesc
+        );
+        var location = new BookingDetailResponse.LocationDto(
+                lId, lName, lAddr, lLat, lLng, lCover, avgRating, reviewCnt
+        );
+        var payment = new BookingDetailResponse.PaymentDto(
+                pId, pStatus, pProof
+        );
+
+        boolean finished = bEndZ != null && java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).isAfter(bEndZ);
+        boolean canWriteReview = "CONFIRMED".equals(bStatus) && finished && myReviewId == null;
+
+        var review = new BookingDetailResponse.ReviewDto(
+                canWriteReview, myReviewId
+        );
+
+        // ระวังลำดับฟิลด์ใน DTO Actions: canCancel, canPay, canUploadSlip
+        var actions = new BookingDetailResponse.Actions(
+                /* canCancel     */ "HOLD".equals(bStatus),
+                /* canPay        */ "HOLD".equals(bStatus) || "PENDING_REVIEW".equals(bStatus),
+                /* canUploadSlip */ pId != null && "PENDING".equals(pStatus) && (pProof == null || pProof.isBlank())
+        );
+
+        return new BookingDetailResponse(booking, unit, location, payment, review, actions);
     }
 }

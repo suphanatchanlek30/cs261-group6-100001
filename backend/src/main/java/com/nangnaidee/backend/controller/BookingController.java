@@ -38,11 +38,12 @@ public class BookingController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Booking> getBookingDetail(
+    public ResponseEntity<com.nangnaidee.backend.dto.BookingDetailResponse> getBookingDetail(
             @RequestHeader("Authorization") String authorization,
-            @PathVariable("id") UUID id) {
-        Booking booking = bookingService.getBookingDetail(authorization, id);
-        return ResponseEntity.ok(booking);
+            @PathVariable("id") UUID id
+    ) {
+        var dto = bookingService.getBookingDetailDto(authorization, id);
+        return ResponseEntity.ok(dto);
     }
 
     @PatchMapping("/{id}/cancel")
