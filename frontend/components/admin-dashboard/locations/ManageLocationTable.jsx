@@ -133,7 +133,7 @@ export default function ManageLocationTable({
               >
                 <div className="sm:col-span-2 flex justify-center sm:justify-start">
                   {it.coverImageUrl ? (
-                    <div className="relative w-28 h-16 sm:w-18 md:w-20 xl:w-50 rounded-md overflow-hidden">
+                    <div className="relative w-28 h-16 sm:w-18 md:w-20 xl:w-45 rounded-md overflow-hidden">
                       <img src={it.coverImageUrl} alt={it.name} className="w-full h-full object-cover" />
                     </div>
                   ) : (

@@ -11,6 +11,7 @@ export default function NavLinks({ mobile = false, onClick }) {
   const links = [
     { name: "Home", href: "/home" },
     { name: "Search", href: "/search" },
+    { name: "My Booking", href: "/my-booking" },
     { name: "About Us", href: "/about" },
     { name: "Help", href: "/help" },
   ];
