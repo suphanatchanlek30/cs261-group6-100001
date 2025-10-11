@@ -5,6 +5,7 @@ import { useMemo, useState, useCallback } from "react";
 import Swal from "sweetalert2";
 import { checkUnitAvailability, createBooking } from "@/services/bookingService";
 import { buildStartTimeISO } from "@/utils/date";
+import { useRouter } from "next/navigation";
 
 const HOURS_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -16,6 +17,8 @@ export default function BookingPanel({ selectedUnit, onBooked }) {
   const [checking, setChecking] = useState(false);
   const [available, setAvailable] = useState(null); // null | boolean
   const [msg, setMsg] = useState("");
+
+  const router = useRouter();
 
   // คำนวณ startTime เป็น ISO-8601 (+offset ตามเครื่องผู้ใช้)
   const startTimeISO = useMemo(
@@ -140,6 +143,8 @@ export default function BookingPanel({ selectedUnit, onBooked }) {
       confirmButtonText: "OK",
     });
 
+    // ไปหน้า My booking
+    router.push("/my-booking");
     onBooked?.(data);
   }, [available, hours, pricePerHour, selectedUnit, startTimeISO, total, onBooked]);
 
