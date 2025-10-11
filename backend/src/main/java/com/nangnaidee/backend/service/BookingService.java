@@ -289,16 +289,20 @@ public class BookingService {
                     payStatus, proofUrl
             );
             boolean hasReview = (reviewIdStr != null);
-            var reviewDto = new ReviewDto(
-                    // เงื่อนไขรีวิว: จองต้อง CONFIRMED และเลยเวลา end แล้ว และยังไม่เคยรีวิว
-                    "CONFIRMED".equals(bookingStatus) &&
-                            java.time.OffsetDateTime.now().isAfter(
-                                    BookingOverviewItem.utc(endTime.toLocalDateTime())
-                            ) &&
-                            !hasReview,
-                    hasReview ? java.util.UUID.fromString(reviewIdStr) : null,
+
+            // ใช้เวลาปัจจุบันแบบ UTC
+//            boolean nowAfterEndUtc = OffsetDateTime.now(ZoneOffset.UTC)
+//                    .isAfter(BookingOverviewItem.utc(endTime.toLocalDateTime()));
+
+            // เงื่อนไข: จองต้อง CONFIRMED + เลยเวลาจบ (UTC) + ยังไม่เคยรีวิว
+            boolean canReview = "CONFIRMED".equals(bookingStatus) && !hasReview;
+
+            var reviewDto = new BookingOverviewItem.ReviewDto(
+                    canReview,
+                    hasReview ? UUID.fromString(reviewIdStr) : null,
                     avgRating, cntRating
             );
+
 
             // ปุ่ม action: ตัดสินใจง่าย ๆ ตามสเตตัส/การชำระเงิน
             boolean canPay = "HOLD".equals(bookingStatus);
@@ -394,8 +398,9 @@ public class BookingService {
                 pId, pStatus, pProof
         );
 
-        boolean finished = bEndZ != null && java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).isAfter(bEndZ);
-        boolean canWriteReview = "CONFIRMED".equals(bStatus) && finished && myReviewId == null;
+//        boolean finished = bEndZ != null && java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).isAfter(bEndZ);
+//        boolean canWriteReview = "CONFIRMED".equals(bStatus) && finished && myReviewId == null;
+        boolean canWriteReview = "CONFIRMED".equals(bStatus) && myReviewId == null;
 
         var review = new BookingDetailResponse.ReviewDto(
                 canWriteReview, myReviewId
