@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -47,12 +48,16 @@ public class BookingService {
         OffsetDateTime end = start.plusHours(req.getHours());
         BigDecimal total = unit.getPriceHourly().multiply(new BigDecimal(req.getHours()));
 
+        var startUtc = start.withOffsetSameInstant(ZoneOffset.UTC);
+        var endUtc   = end.withOffsetSameInstant(ZoneOffset.UTC);
+
+
         Booking booking = new Booking();
         booking.setId(UUID.randomUUID());
         booking.setUserId(me.getId());
         booking.setLocationUnitId(unit.getId());
-        booking.setStartTime(start.toLocalDateTime());
-        booking.setEndTime(end.toLocalDateTime());
+        booking.setStartTime(startUtc.toLocalDateTime()); // เก็บเป็น UTC (ไม่มี offset) ใน DB
+        booking.setEndTime(endUtc.toLocalDateTime());
         booking.setHours(req.getHours());
         booking.setTotal(total);
         booking.setStatus("HOLD");
@@ -60,11 +65,14 @@ public class BookingService {
 
         bookingRepository.save(booking);
 
+        OffsetDateTime startOut = OffsetDateTime.of(booking.getStartTime(), ZoneOffset.UTC);
+        OffsetDateTime endOut   = OffsetDateTime.of(booking.getEndTime(), ZoneOffset.UTC);
+
         return new CreateBookingResponse(
                 booking.getId(),
                 unit.getId(),
-                start,
-                end,
+                startOut,              // 2025-10-16T05:00:00Z
+                endOut,                // 2025-10-16T06:00:00Z
                 req.getHours(),
                 total,
                 booking.getStatus()
@@ -87,8 +95,8 @@ public class BookingService {
                 .map(booking -> new BookingListItem(
                         booking.getId(),
                         booking.getLocationUnitId(),
-                        booking.getStartTime(),
-                        booking.getEndTime(),
+                        OffsetDateTime.of(booking.getStartTime(), ZoneOffset.UTC), // แปลงกลับให้มี Z
+                        OffsetDateTime.of(booking.getEndTime(), ZoneOffset.UTC),
                         booking.getHours(),
                         booking.getTotal(),
                         booking.getStatus(),
