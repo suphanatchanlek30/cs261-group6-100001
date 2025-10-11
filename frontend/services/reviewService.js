@@ -1,15 +1,46 @@
 // services/reviewService.js
 import axios from "./axiosInstance";
 
-/** ดึงรีวิวของสถานที่ */
-export async function getLocationReviews(locationId, { page = 0, size = 3, minRating } = {}) {
+/**
+ * POST /api/reviews
+ * body: { bookingId, rating, comment }
+ */
+export async function createReview({ bookingId, rating, comment }) {
   try {
-    const params = { page, size };
-    if (minRating) params.minRating = minRating;
-    const res = await axios.get(`/locations/${locationId}/reviews`, { params });
+    const res = await axios.post("/reviews", { bookingId, rating, comment });
     return { ok: true, data: res.data };
   } catch (err) {
-    const msg = err?.response?.data || err?.message || "โหลดรีวิวล้มเหลว";
-    return { ok: false, message: msg };
+    const status = err?.response?.status;
+    const message =
+      err?.response?.data?.message ||
+      err?.response?.data ||
+      err.message ||
+      "ส่งรีวิวไม่สำเร็จ";
+    return { ok: false, status, message };
+  }
+}
+
+/**
+ * GET /api/locations/{locationId}/reviews
+ * query: page,size,minRating
+ */
+export async function getLocationReviews(
+  locationId,
+  { page = 0, size = 10, minRating } = {}
+) {
+  try {
+    const params = { page, size };
+    if (minRating != null) params.minRating = minRating;
+
+    const res = await axios.get(`/locations/${locationId}/reviews`, { params });
+    // response: { items, page, size, total, totalPages }
+    return { ok: true, data: res.data };
+  } catch (err) {
+    const message =
+      err?.response?.data?.message ||
+      err?.response?.data ||
+      err.message ||
+      "โหลดรีวิวไม่สำเร็จ";
+    return { ok: false, message };
   }
 }

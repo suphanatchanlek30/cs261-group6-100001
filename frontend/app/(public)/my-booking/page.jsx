@@ -149,10 +149,12 @@ export default function MyBookingPage() {
               total={b.total ?? 0}
               canPay={!!act.canPay}
               canCancel={!!act.canCancel}
-              canReview={!!rev.canReview}
+              canReview={rev.canReview ?? (b.status === "CONFIRMED" && !rev.reviewId)}
               onPay={() => router.push(`/payment/${b.id}`)}
               onCancel={() => onCancelBooking(b.id)}
               onReview={() => router.push(`/bookings/${b.id}/review`)}
+              // canReview={!!(rev.canWrite ?? (b.status === "CONFIRMED"))}
+              // onReview={() => (window.location.href = `/bookings/${b.id}/review`)}
             />
           );
         })}

@@ -12,6 +12,7 @@ import LocationHeader from "@/components/location/LocationHeader";
 import UnitList from "@/components/location/UnitList";
 import BookingPanel from "@/components/location/BookingPanel";
 import StarRating from "@/components/common/StarRating";
+import { getLocationReviews as fetchLocationReviews } from "@/services/reviewService";
 
 export default function LocationDetailPage() {
   const { id } = useParams();
@@ -42,7 +43,7 @@ export default function LocationDetailPage() {
       setUnits(Array.isArray(data?.units) ? data.units : []);
 
       // รีวิว 3 รายการแรก
-      const rv = await getLocationReviews(id, { page: 0, size: 3, minRating: 1 });
+      const rv = await fetchLocationReviews(id, { page: 0, size: 3, minRating: 1 });
       if (!cancelled && rv.ok) setReviews(rv.data.items || []);
 
       setLoading(false);
