@@ -92,16 +92,16 @@ public class BookingService {
         }
         
         List<BookingListItem> items = bookingPage.getContent().stream()
-                .map(booking -> new BookingListItem(
-                        booking.getId(),
-                        booking.getLocationUnitId(),
-                        OffsetDateTime.of(booking.getStartTime(), ZoneOffset.UTC), // แปลงกลับให้มี Z
-                        OffsetDateTime.of(booking.getEndTime(), ZoneOffset.UTC),
-                        booking.getHours(),
-                        booking.getTotal(),
-                        booking.getStatus(),
-                        booking.getBookingCode(),
-                        booking.getCreatedAt()
+                .map(b -> new BookingListItem(
+                        b.getId(),
+                        b.getLocationUnitId(),
+                        OffsetDateTime.of(b.getStartTime(), ZoneOffset.UTC),
+                        OffsetDateTime.of(b.getEndTime(), ZoneOffset.UTC),
+                        b.getHours(),
+                        b.getTotal(),
+                        b.getStatus(),
+                        b.getBookingCode(),
+                        b.getCreatedAt()
                 ))
                 .collect(Collectors.toList());
         
