@@ -1,4 +1,4 @@
-// components/home/StarRating.jsx
+// components/common/StarRating.jsx
 import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
 
 export default function StarRating({ value = 0, max = 5, size = 20 }) {

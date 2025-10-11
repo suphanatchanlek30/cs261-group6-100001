@@ -1,9 +1,6 @@
-// components/search/Controls/SearchInput.jsx
+// components/common/controls/SearchInput.jsx
 
 "use client";
-
-// ช่องค้นหา + ไอคอน
-
 import { FiSearch } from "react-icons/fi";
 
 export default function SearchInput({ value, onChange }) {

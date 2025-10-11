@@ -1,11 +1,9 @@
-// components/search/Controls/PriceSortSelect.jsx
+// components/common/controls/PriceSortSelect.jsx
 
 "use client";
-
 import { useRef, useMemo } from "react";
 import { FiChevronDown } from "react-icons/fi";
 
-// sort: "price_asc" | "price_desc"
 export default function PriceSortSelect({
   sort = "price_asc",
   setSort,
@@ -37,9 +35,7 @@ export default function PriceSortSelect({
                 detailsRef.current?.removeAttribute("open");
               }}
               className={`block w-full rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                sort === opt.value
-                  ? "bg-[#7C3AED] text-white shadow-[inset_0_0_0_2px_rgba(0,0,0,0.03)]"
-                  : "text-neutral-700 hover:bg-violet-50"
+                sort === opt.value ? "bg-[#7C3AED] text-white" : "text-neutral-700 hover:bg-violet-50"
               }`}
             >
               {opt.label}
