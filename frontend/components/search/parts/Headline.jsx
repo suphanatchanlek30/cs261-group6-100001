@@ -1,4 +1,4 @@
-// components/search/Headline.jsx
+// components
 "use client";
 
 // หัวเรื่องและคำอธิบายด้านบน

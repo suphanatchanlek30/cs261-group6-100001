@@ -1,16 +1,12 @@
-// components/search/Banner.jsx
+// components/search/parts/Banner.jsx
 "use client";
-
-// การ์ดพื้นหลัง + overlay (โค้งมน)
 
 import Image from "next/image";
 
 export default function Banner({ children }) {
   return (
     <div className="relative w-full max-w-[1400px] mx-auto rounded-[20px] shadow-md overflow-visible px-3 sm:px-6">
-      {/* inner wrapper holds the rounded/overflow-hidden image so the outer container can allow dropdowns to escape */}
       <div className="rounded-[20px] overflow-hidden">
-        {/* พื้นหลัง */}
         <div className="relative h-[120px] sm:h-[140px] md:h-[160px] lg:h-[200px]">
           <Image
             src="/login-register/login-register.png"
@@ -20,12 +16,10 @@ export default function Banner({ children }) {
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 1100px"
             priority
           />
-          {/* overlay โปร่งให้คอนทราสต์เหมือนภาพ */}
           <div className="absolute inset-0 bg-white/20" />
         </div>
       </div>
 
-      {/* Search card: overlay on md+; on small screens it will appear below the image */}
       <div className="z-30 w-full">
         <div className="mx-auto w-full px-3 sm:px-4">
           <div className="md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full">
@@ -38,7 +32,6 @@ export default function Banner({ children }) {
         </div>
       </div>
 
-      {/* เงาด้านในมุมโค้งให้มิติคล้ายตัวอย่าง */}
       <div className="pointer-events-none absolute inset-0 rounded-[20px] ring-1 ring-black/5" />
     </div>
   );

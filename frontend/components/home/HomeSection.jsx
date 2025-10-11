@@ -1,63 +1,71 @@
 // components/home/HomeSection.jsx
+
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
 import { FiChevronRight } from "react-icons/fi";
-import { LOCATIONS, POPULAR_LOCATIONS } from "./data";
-import LocationCard from "./LocationCard";
-import PopularFilters from "./PopularFilters";
-import SearchSectionHome from "../search/SearchSectionHome";
+import { useMemo, useState } from "react";
+import HomeHero from "./parts/HomeHero";
+import PopularFilters from "./parts/PopularFilters";
+import LocationCard from "./parts/LocationCard";
+import useHomeLocations from "./hooks/useHomeLocations";
 
+const PAGE_SIZE = 6;
 
+/** หน้า Home: Hero + ป็อปปูล่าร์ + การ์ด 3 คอลัมน์ + See more */
 export default function HomeSection() {
-  // เตรียมข้อมูลโชว์หน้าแรกสูงสุด 6 การ์ด
-  const displayed = useMemo(() => LOCATIONS.slice(0, 6), []);
-  const hasMore = LOCATIONS.length > 6; // มีมากกว่า 6 ใบ → โชว์ปุ่ม
+  const [activeProvince, setActiveProvince] = useState(null); // null = ทั้งหมด
+  const { items, total, loading, error } = useHomeLocations({
+    province: activeProvince,
+    size: PAGE_SIZE,
+  });
+
+  const hasMore = useMemo(() => total > PAGE_SIZE, [total]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-        {/* Search */}
-       <SearchSectionHome onSearch={(payload) => console.log("Search:", payload)} />
-    
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      
-      {/* หัวเรื่อง */}
-      <h1 className="text-2xl font-bold text-[#282828] mb-6 mt-4">
-        Most popular location
-      </h1>
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
+      <HomeHero />
 
-      {/* ฟิลเตอร์ยอดนิยม (ต่อ API ภายหลังได้) */}
-      <PopularFilters
-        items={POPULAR_LOCATIONS}
-        onSelect={(city) => console.log("filter:", city)}
-      />
+      <section className="mx-auto max-w-6xl px-2 sm:px-4 py-10">
+        <h2 className="text-[22px] sm:text-[24px] font-bold text-[#282828] mb-4">
+          Population place
+        </h2>
 
-      {/* การ์ดสูงสุด 6 ใบ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
-        {displayed.map((p) => (
-          <LocationCard key={p.id} p={p} />
-        ))}
-      </div>
+        <PopularFilters
+          items={["Bangkok", "Nonthaburi", "Pathum Thani"]}
+          active={activeProvince}
+          onSelect={setActiveProvince}
+        />
 
-      {/* ปุ่ม See more: โชว์เฉพาะเมื่อมี item มากกว่า 6 */}
-      {hasMore && (
-        <div className="mt-8 flex justify-center">
-          <Link
-            href="/search"
-            className="group inline-flex items-center gap-2 rounded-[10px]
-                       bg-[#7C3AED] px-8 py-2 text-white font-semibold
-                       shadow-[0_8px_24px_rgba(124,58,237,0.35)]
-                       hover:bg-[#6D28D9] active:scale-[0.99]
-                       focus:outline-none focus-visible:ring-2
-                       focus-visible:ring-[#7C3AED] focus-visible:ring-offset-2 transition"
-          >
-            See more
-            <FiChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </Link>
-        </div>
-      )}
-    </div>
+        {loading ? (
+          <p className="py-10 text-center text-gray-500">Loading...</p>
+        ) : error ? (
+          <p className="py-10 text-center text-red-600">{error}</p>
+        ) : items.length === 0 ? (
+          <p className="py-10 text-center text-gray-500">No locations found</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+            {items.map((p) => (
+              <LocationCard key={p.id} loc={p} />
+            ))}
+          </div>
+        )}
+
+        {!activeProvince && hasMore && (
+          <div className="mt-10 flex justify-center">
+            <Link
+              href="/search"
+              className="group inline-flex items-center gap-2 rounded-[12px]
+                         bg-[#7C3AED] px-6 py-3 text-white text-[15px] font-semibold
+                         shadow-[0_10px_24px_rgba(124,58,237,0.35)] hover:bg-[#6D28D9]
+                         transition active:scale-[0.99]"
+            >
+              See more
+              <FiChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
