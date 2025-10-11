@@ -216,3 +216,14 @@ export function deriveActionsFromStatus(status) {
     isHistoryOnly: S === "CANCELLED" || S === "EXPIRED",
   };
 }
+
+
+export async function getMyBookingOverviewById(bookingId) {
+  try {
+    const res = await axios.get(`/bookings/${bookingId}`);
+    return { ok: true, data: res.data };
+  } catch (err) {
+    const msg = err?.response?.data?.message || err?.response?.data || err?.message || "โหลดรายละเอียดการจองล้มเหลว";
+    return { ok: false, message: msg };
+  }
+}

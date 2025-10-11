@@ -13,6 +13,7 @@ import {
   cancelBooking,
   formatRangeLocal,
 } from "@/services/bookingService";
+import { useRouter } from "next/navigation";
 
 export default function MyBookingPage() {
   // tab: HOLD | PENDING_REVIEW | CONFIRMED | CANCELLED | EXPIRED | undefined
@@ -29,6 +30,8 @@ export default function MyBookingPage() {
     total: 0,
     totalPages: 1,
   });
+
+  const router = useRouter();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -147,9 +150,9 @@ export default function MyBookingPage() {
               canPay={!!act.canPay}
               canCancel={!!act.canCancel}
               canReview={!!rev.canReview}
-              onPay={() => (window.location.href = `/checkout?bookingId=${b.id}`)}
+              onPay={() => router.push(`/payment/${b.id}`)}
               onCancel={() => onCancelBooking(b.id)}
-              onReview={() => (window.location.href = `/bookings/${b.id}/review`)}
+              onReview={() => router.push(`/bookings/${b.id}/review`)}
             />
           );
         })}
