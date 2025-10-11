@@ -8,6 +8,7 @@ import com.nangnaidee.backend.exception.ForbiddenException;
 import com.nangnaidee.backend.exception.NotFoundException;
 import com.nangnaidee.backend.model.Booking;
 import com.nangnaidee.backend.model.LocationUnit;
+import com.nangnaidee.backend.repo.BookingOverviewRepository;
 import com.nangnaidee.backend.repo.BookingRepository;
 import com.nangnaidee.backend.repo.LocationUnitRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import com.nangnaidee.backend.dto.BookingOverviewItem.*;
+import com.nangnaidee.backend.dto.BookingOverviewItem;
+import com.nangnaidee.backend.dto.BookingOverviewResponse;
+
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -29,6 +34,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final LocationUnitRepository unitRepository;
     private final AuthService authService;
+    private final BookingOverviewRepository bookingOverviewRepository;
 
     public CreateBookingResponse create(String authorizationHeader, CreateBookingRequest req) {
         // validate นาทีต้องเป็น 0
@@ -159,5 +165,97 @@ public class BookingService {
         bookingRepository.save(booking);
         
         return new CancelBookingResponse("CANCELLED");
+    }
+
+    // --- ใหม่: ดึง overview ---
+    public BookingOverviewResponse getMyOverview(String authorization, String status, int page, int size) {
+        MeResponse me = authService.me(authorization);
+
+        Pageable pageable = PageRequest.of(page, size);
+        var resultPage = bookingOverviewRepository.findMyOverview(
+                me.getId(),
+                (status==null || status.isBlank()) ? null : status,
+                pageable
+        );
+
+        var items = resultPage.getContent().stream().map(row -> {
+            int i = 0;
+
+            var bookingId     = java.util.UUID.fromString((String) row[i++]);
+            var bookingStatus = (String) row[i++];
+            var bookingCode   = (String) row[i++];
+            var startTime     = (java.sql.Timestamp) row[i++];   // LocalDateTime
+            var endTime       = (java.sql.Timestamp) row[i++];
+            var hours         = ((Number) row[i++]).intValue();
+            var total         = (java.math.BigDecimal) row[i++];
+
+            var unitId   = java.util.UUID.fromString((String) row[i++]);
+            var unitCode = (String) row[i++];
+            var unitName = (String) row[i++];
+            var unitImg  = (String) row[i++];
+            var capacity = row[i++] == null ? null : ((Number) row[i-1]).intValue();
+            var shortDesc= (String) row[i++];
+
+            var locId    = java.util.UUID.fromString((String) row[i++]);
+            var locName  = (String) row[i++];
+            var address  = (String) row[i++];
+            var lat      = row[i++] == null ? null : ((Number) row[i-1]).doubleValue();
+            var lng      = row[i++] == null ? null : ((Number) row[i-1]).doubleValue();
+            var coverUrl = (String) row[i++];
+
+            var payIdStr   = (String) row[i++]; // nullable
+            var payStatus  = (String) row[i++];
+            var proofUrl   = (String) row[i++];
+
+            var avgRating  = row[i++] == null ? null : ((Number) row[i-1]).doubleValue();
+            var cntRating  = row[i++] == null ? null : ((Number) row[i-1]).longValue();
+
+            var reviewIdStr= (String) row[i++]; // nullable
+
+            var bookingDto = new BookingDto(
+                    bookingId, bookingStatus, bookingCode,
+                    BookingOverviewItem.utc(startTime.toLocalDateTime()),
+                    BookingOverviewItem.utc(endTime.toLocalDateTime()),
+                    hours, total
+            );
+
+            var unitDto = new UnitDto(unitId, unitCode, unitName, unitImg, capacity, shortDesc);
+            var locDto  = new LocationDto(locId, locName, address, lat, lng, coverUrl);
+            var paymentDto = new PaymentDto(
+                    payIdStr == null ? null : java.util.UUID.fromString(payIdStr),
+                    payStatus, proofUrl
+            );
+            boolean hasReview = (reviewIdStr != null);
+            var reviewDto = new ReviewDto(
+                    // เงื่อนไขรีวิว: จองต้อง CONFIRMED และเลยเวลา end แล้ว และยังไม่เคยรีวิว
+                    "CONFIRMED".equals(bookingStatus) &&
+                            java.time.OffsetDateTime.now().isAfter(
+                                    BookingOverviewItem.utc(endTime.toLocalDateTime())
+                            ) &&
+                            !hasReview,
+                    hasReview ? java.util.UUID.fromString(reviewIdStr) : null,
+                    avgRating, cntRating
+            );
+
+            // ปุ่ม action: ตัดสินใจง่าย ๆ ตามสเตตัส/การชำระเงิน
+            boolean canPay = "HOLD".equals(bookingStatus);
+            boolean canCancel = "HOLD".equals(bookingStatus) || "PENDING_REVIEW".equals(bookingStatus);
+            boolean canUploadProof =
+                    paymentDto.getPaymentId() != null &&
+                            "PENDING".equals(paymentDto.getStatus()) &&
+                            (paymentDto.getProofUrl() == null || paymentDto.getProofUrl().isBlank());
+
+            var actions = new BookingOverviewItem.Actions(canPay, canCancel, canUploadProof);
+
+            return new BookingOverviewItem(bookingDto, unitDto, locDto, paymentDto, reviewDto, actions);
+        }).toList();
+
+        return new BookingOverviewResponse(
+                items,
+                resultPage.getNumber(),
+                resultPage.getSize(),
+                resultPage.getTotalElements(),
+                resultPage.getTotalPages()
+        );
     }
 }

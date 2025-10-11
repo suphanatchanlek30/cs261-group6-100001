@@ -2,11 +2,7 @@
 
 package com.nangnaidee.backend.controller;
 
-import com.nangnaidee.backend.dto.BookingListResponse;
-import com.nangnaidee.backend.dto.CancelBookingRequest;
-import com.nangnaidee.backend.dto.CancelBookingResponse;
-import com.nangnaidee.backend.dto.CreateBookingRequest;
-import com.nangnaidee.backend.dto.CreateBookingResponse;
+import com.nangnaidee.backend.dto.*;
 import com.nangnaidee.backend.model.Booking;
 import com.nangnaidee.backend.service.BookingService;
 import jakarta.validation.Valid;
@@ -61,5 +57,16 @@ public class BookingController {
         }
         CancelBookingResponse response = bookingService.cancelBooking(authorization, id, request);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/me/overview")
+    public ResponseEntity<BookingOverviewResponse> getMyOverview(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size
+    ) {
+        var res = bookingService.getMyOverview(authorization, status, page, size);
+        return ResponseEntity.ok(res);
     }
 }
