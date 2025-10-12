@@ -43,7 +43,7 @@ export default function PaymentPage() {
             setOverview(data);
             // ดึงสรุปรีวิวของสถานที่เพื่อแสดงคะแนน/จำนวนรีวิว
             if (data?.location?.id) {
-                const ov = await getLocationReviewsOverview(data.location.id, { page: 0, size: 0 });
+                const ov = await getLocationReviewsOverview(data.location.id);
                 if (ov.ok) setReviewStats(ov.data?.stats || null);
             }
             setLoading(false);
