@@ -47,4 +47,16 @@ public class ReviewController {
         reviewService.deleteReview(authorization, id);
         return ResponseEntity.ok(new ApiMessageResponse("ลบรีวิวสำเร็จ"));
     }
+
+    @GetMapping("/locations/{locationId}/reviews/overview")
+    public ResponseEntity<com.nangnaidee.backend.dto.LocationReviewsOverviewResponse> getLocationReviewsOverview(
+            @PathVariable("locationId") java.util.UUID locationId,
+            @RequestParam(value = "minRating", required = false) Integer minRating,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+
+        var res = reviewService.getLocationReviewsOverview(locationId, minRating, page, size);
+        return ResponseEntity.ok(res);
+    }
+
 }

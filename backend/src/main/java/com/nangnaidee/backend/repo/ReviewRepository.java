@@ -40,4 +40,23 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     Page<Object[]> findByLocationIdWithRatingFilter(@Param("locationId") UUID locationId, 
                                                    @Param("minRating") Integer minRating, 
                                                    Pageable pageable);
+
+    @Query(value = """
+    SELECT 
+        CAST(AVG(CAST(r.rating AS DECIMAL(10,2))) AS DECIMAL(10,2)) AS avg_rating,
+        COUNT(*) AS total_reviews,
+        COUNT(DISTINCT r.user_id) AS reviewers,
+        SUM(CASE WHEN r.rating = 5 THEN 1 ELSE 0 END) AS r5,
+        SUM(CASE WHEN r.rating = 4 THEN 1 ELSE 0 END) AS r4,
+        SUM(CASE WHEN r.rating = 3 THEN 1 ELSE 0 END) AS r3,
+        SUM(CASE WHEN r.rating = 2 THEN 1 ELSE 0 END) AS r2,
+        SUM(CASE WHEN r.rating = 1 THEN 1 ELSE 0 END) AS r1
+    FROM dbo.reviews r
+    WHERE r.location_id = :locationId
+      AND (:minRating IS NULL OR r.rating >= :minRating)
+    """, nativeQuery = true)
+    java.util.List<Object[]> aggregateStatsByLocation(@Param("locationId") java.util.UUID locationId,
+                                                      @Param("minRating") Integer minRating);
+
+
 }
