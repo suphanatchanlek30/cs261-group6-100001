@@ -4,7 +4,8 @@
 import { FiMapPin, FiClock, FiWifi } from "react-icons/fi";
 
 export default function ReviewHeader({
-  coverImageUrl,
+  // coverImageUrl,
+  unitImageUrl,
   locationName,
   address,
   dateText,
@@ -14,7 +15,7 @@ export default function ReviewHeader({
   return (
     <div className="flex gap-5 items-start">
       <img
-        src={coverImageUrl || "/placeholder.jpg"}
+        src={unitImageUrl || "/placeholder.jpg"}
         alt={locationName || "location"}
         className="w-[260px] h-[170px] rounded-xl object-cover shadow"
       />

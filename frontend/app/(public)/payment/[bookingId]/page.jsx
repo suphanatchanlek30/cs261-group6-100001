@@ -9,7 +9,7 @@ import { FiMapPin, FiMap } from "react-icons/fi";
 import PaymentSummaryCard from "@/components/payment/PaymentSummaryCard";
 import PaymentQRSection from "@/components/payment/PaymentQRSection";
 
-import { getMyBookingOverviewById, formatRangeLocal } from "@/services/bookingService";
+import { getMyBookingOverviewById, formatRangeLocal, formatRangeLocalHotfix } from "@/services/bookingService";
 import { createPayment, attachPaymentProof } from "@/services/paymentService";
 import { uploadImage } from "@/services/uploadService";
 
@@ -53,10 +53,7 @@ export default function PaymentPage() {
 
     const cover = u?.imageUrl || l?.coverImageUrl || "/placeholder.jpg";
     const unitLabel = u?.code ? `${u.code} · ${u.name}` : u?.name;
-    const { dateText, timeText } = useMemo(() => {
-        if (!b?.startTime || !b?.endTime) return { dateText: "-", timeText: "-" };
-        return formatRangeLocal(b.startTime, b.endTime);
-    }, [b?.startTime, b?.endTime]);
+    const { dateText, timeText } = formatRangeLocalHotfix(b.startTime, b.endTime);
 
     // กดสร้าง QR -> POST /api/payments
     const handleCreateQR = async () => {
