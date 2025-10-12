@@ -180,31 +180,75 @@ export async function cancelBooking(id, reason) {
 }
 
 /* ---------------- UI helpers ---------------- */
-/** แปลงช่วงเวลาเป็นข้อความ local (dd/mm/yyyy + HH:MM-HH:MM) */
-export function formatRangeLocal(startISO, endISO, locale = "th-TH") {
+/** แปลงช่วงเวลาเป็นข้อความตามโซนเวลาไทย (Asia/Bangkok)
+ * - ตัด timezone เดิมทิ้ง แล้วตีความเป็น UTC (เพื่อบังคับให้ขยับ +7)
+ */
+export function formatRangeLocal(
+  startISO,
+  endISO,
+  locale = "th-TH",
+  timeZone = "Asia/Bangkok"
+) {
   if (!startISO || !endISO) return { dateText: "-", timeText: "-" };
-  const s = new Date(startISO);
-  const e = new Date(endISO);
+
+  // 🔹 ตัดส่วน timezone ออก แล้วเติม Z เพื่อบังคับตีความเป็น UTC
+  const normalizeUtc = (s) => {
+    if (typeof s !== "string") return s;
+    // เอาเฉพาะ yyyy-MM-ddTHH:mm:ss แล้วเติม Z
+    const m = s.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/);
+    return m ? `${m[1]}Z` : s;
+  };
+
+  const s = new Date(normalizeUtc(startISO));
+  const e = new Date(normalizeUtc(endISO));
+
   if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) {
     return { dateText: "-", timeText: "-" };
   }
+
   const dateText = s.toLocaleDateString(locale, {
+    timeZone,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
+
   const t1 = s.toLocaleTimeString(locale, {
+    timeZone,
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   });
   const t2 = e.toLocaleTimeString(locale, {
+    timeZone,
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   });
+
   return { dateText, timeText: `${t1}-${t2}` };
 }
+
+// HOTFIX: บวก 14 ชั่วโมง เพื่อชดเชยที่ระบบโดนเลื่อน -7 ชม. มาแล้ว
+export function formatRangeLocalHotfix(startISO, endISO, locale = "th-TH") {
+  if (!startISO || !endISO) return { dateText: "-", timeText: "-" };
+  const SHIFT_MS = 14 * 60 * 60 * 1000; // +14h
+
+  const s0 = new Date(startISO);
+  const e0 = new Date(endISO);
+  if (Number.isNaN(s0.getTime()) || Number.isNaN(e0.getTime())) {
+    return { dateText: "-", timeText: "-" };
+  }
+  const s = new Date(s0.getTime() + SHIFT_MS);
+  const e = new Date(e0.getTime() + SHIFT_MS);
+
+  const dateText = s.toLocaleDateString(locale, { timeZone: "UTC", day: "2-digit", month: "2-digit", year: "numeric" });
+  const t1 = s.toLocaleTimeString(locale, { timeZone: "UTC", hour: "2-digit", minute: "2-digit", hour12: false });
+  const t2 = e.toLocaleTimeString(locale, { timeZone: "UTC", hour: "2-digit", minute: "2-digit", hour12: false });
+
+  return { dateText, timeText: `${t1}-${t2}` };
+}
+
 
 /** สรุปสิทธิ์ปุ่มจากสถานะ (fallback ถ้าไม่ได้ส่ง actions/flags มา) */
 export function deriveActionsFromStatus(status) {

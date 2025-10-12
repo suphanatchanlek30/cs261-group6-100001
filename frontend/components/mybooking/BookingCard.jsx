@@ -1,7 +1,8 @@
 // components/mybooking/BookingCard.jsx
 "use client";
 
-import { MdOutlineStar, MdContentCopy } from "react-icons/md";
+import { MdContentCopy } from "react-icons/md";
+import RatingWithCount from "@/components/common/RatingWithCount";
 import { CiLocationOn } from "react-icons/ci";
 import { GoPeople, GoClock } from "react-icons/go";
 import { RiVolumeMuteLine } from "react-icons/ri";
@@ -33,8 +34,8 @@ export default function BookingCard({
   locationName,
   unitLabel,
   addressText,
-  rating = 0,
-  reviewCount = 0,
+  rating = null,
+  reviewCount = null,
   capacity,
   quiet,
   wifi,
@@ -74,13 +75,12 @@ export default function BookingCard({
           <StatusPill status={status} className="shrink-0 align-middle relative top-[1px]" />
           {/* เส้นแบ่งแนวตั้ง */}
           <span aria-hidden="true" className="mx-3 h-3 w-px bg-gray-300" />
-          <div className="flex items-center gap-0.5 text-amber-400">
-            {Array.from({ length: Math.min(5, Number(rating) || 0) }).map(
-              (_, i) => (
-                <MdOutlineStar key={i} size={18} />
-              )
-            )}
-          </div>
+          <RatingWithCount
+            rating={typeof rating === 'number' ? rating : 0}
+            count={typeof reviewCount === 'number' ? reviewCount : 0}
+            size={14}
+            labelClassName="text-neutral-500"
+          />
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-2">

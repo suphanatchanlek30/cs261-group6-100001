@@ -1,7 +1,7 @@
 // app/(public)/bookings/[bookingId]/review/page.jsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 
@@ -9,7 +9,7 @@ import Swal from "sweetalert2";
 import ReviewHeader from "@/components/review/ReviewHeader";
 import StarRating from "@/components/review/StarRating";
 
-import { getMyBookingOverviewById, formatRangeLocal } from "@/services/bookingService";
+import { getMyBookingOverviewById, formatRangeLocal, formatRangeLocalHotfix } from "@/services/bookingService";
 import { createReview } from "@/services/reviewService";
 
 export default function ReviewPage() {
@@ -47,11 +47,14 @@ export default function ReviewPage() {
     const computedEligible = b?.status === "CONFIRMED" && !alreadyReviewed;
     const canWrite = (serverFlag !== undefined) ? serverFlag : computedEligible;
 
-    const cover = u?.imageUrl || l?.coverImageUrl || "/placeholder.jpg";
-    const { dateText, timeText } = useMemo(() => {
-        if (!b?.startTime || !b?.endTime) return { dateText: "-", timeText: "" };
-        return formatRangeLocal(b.startTime, b.endTime);
-    }, [b?.startTime, b?.endTime]);
+    // const cover = u?.imageUrl || l?.coverImageUrl || "/placeholder.jpg";
+    // Hero ด้านบน = รูปสถานที่
+    const locationCover = l?.coverImageUrl || "/placeholder.jpg";
+
+    // รูปเล็กด้านซ้ายของหัวข้อร้าน = รูปยูนิต (ถ้าไม่มีก็ค่อย fallback เป็นรูปสถานที่)
+    const unitThumb = u?.imageUrl || l?.coverImageUrl || "/placeholder.jpg";
+
+    const { dateText, timeText } = formatRangeLocalHotfix(b.startTime, b.endTime);
 
     const handleSubmit = async () => {
         if (rating < 1) {
@@ -75,6 +78,8 @@ export default function ReviewPage() {
         await Swal.fire("สำเร็จ", data?.message || "รีวิวสำเร็จแล้ว", "success");
         router.replace("/my-booking?tab=CONFIRMED"); // กลับแท็บ Success
     };
+
+    console.log("WIRE start/end:", b.startTime, b.endTime);
 
     if (loading) return <main className="max-w-6xl mx-auto px-6 py-10">Loading…</main>;
     if (err) return <main className="max-w-6xl mx-auto px-6 py-10 text-rose-600">{err}</main>;
@@ -103,7 +108,8 @@ export default function ReviewPage() {
     return (
         <main className="max-w-6xl mx-auto px-6 py-10">
             {/* hero image (optional) */}
-            <img src={cover} alt={l?.name} className="w-full h-64 object-cover rounded-2xl shadow" />
+            {/* <img src={cover} alt={l?.name} className="w-full h-64 object-cover rounded-2xl shadow" /> */}
+            <img src={locationCover} alt={l?.name} className="w-full h-64 object-cover rounded-2xl shadow" />
 
             <section className="mt-10">
                 <h1 className="text-3xl font-extrabold text-gray-900">Share Your Experience</h1>
@@ -113,7 +119,8 @@ export default function ReviewPage() {
 
                 <div className="mt-6">
                     <ReviewHeader
-                        coverImageUrl={cover}
+                        // coverImageUrl={cover}
+                        unitImageUrl={unitThumb}
                         locationName={l?.name}
                         address={l?.address}
                         dateText={dateText}
@@ -149,7 +156,7 @@ export default function ReviewPage() {
                         <button
                             type="button"
                             onClick={handleSubmit}
-                            className="rounded-lg bg-[#C4B5FD] hover:bg-[#A78BFA] px-5 py-2 font-semibold text-white"
+                            className="rounded-lg bg-[#7C3AED] hover:bg-[#A78BFA] px-5 py-2 font-semibold text-white"
                         >
                             Submit Review
                         </button>

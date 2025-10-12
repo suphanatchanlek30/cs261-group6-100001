@@ -44,3 +44,25 @@ export async function getLocationReviews(
     return { ok: false, message };
   }
 }
+
+/**
+ * GET /api/locations/{locationId}/reviews/overview
+ * response: {
+ *   items: [...],
+ *   page, size, total, totalPages,
+ *   stats: { avgRating, totalReviews, reviewers, r5, r4, r3, r2, r1 }
+ * }
+ */
+export async function getLocationReviewsOverview(locationId, params = {}) {
+  try {
+    const res = await axios.get(`/locations/${locationId}/reviews/overview`, { params });
+    return { ok: true, data: res.data };
+  } catch (err) {
+    const message =
+      err?.response?.data?.message ||
+      err?.response?.data ||
+      err.message ||
+      "โหลดสรุปรีวิวไม่สำเร็จ";
+    return { ok: false, message };
+  }
+}

@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getLocationById } from "@/services/locationService";
-import { getLocationReviews } from "@/services/reviewService";
+import { getLocationReviews, getLocationReviewsOverview } from "@/services/reviewService";
 import LocationHeader from "@/components/location/LocationHeader";
 import UnitList from "@/components/location/UnitList";
 import BookingPanel from "@/components/location/BookingPanel";
@@ -19,6 +19,7 @@ export default function LocationDetailPage() {
   const [loc, setLoc] = useState(null);
   const [units, setUnits] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [stats, setStats] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -42,9 +43,13 @@ export default function LocationDetailPage() {
       setLoc(data);
       setUnits(Array.isArray(data?.units) ? data.units : []);
 
-      // รีวิว 3 รายการแรก
-      const rv = await fetchLocationReviews(id, { page: 0, size: 3, minRating: 1 });
+      // รีวิว 3 รายการแรก + overview สถิติ
+      const [rv, ov] = await Promise.all([
+        fetchLocationReviews(id, { page: 0, size: 3, minRating: 1 }),
+        getLocationReviewsOverview(id, { page: 0, size: 0 }),
+      ]);
       if (!cancelled && rv.ok) setReviews(rv.data.items || []);
+      if (!cancelled && ov.ok) setStats(ov.data?.stats || null);
 
       setLoading(false);
     })();
@@ -108,6 +113,20 @@ export default function LocationDetailPage() {
             See more reviews →
           </a>
         </div>
+
+        {stats && (
+          <div className="mt-2 text-sm text-neutral-700 flex items-center gap-3">
+            {stats.totalReviews > 0 ? (
+              <>
+                <StarRating value={Number(stats.avgRating) || 0} size={14} />
+                <span>{Number(stats.avgRating).toFixed(1)} / 5</span>
+                <span className="text-neutral-500">({stats.totalReviews} reviews)</span>
+              </>
+            ) : (
+              <span className="text-neutral-500">(ยังไม่มีรีวิว)</span>
+            )}
+          </div>
+        )}
 
         <div className="mt-3 space-y-3">
           {reviews.length === 0 ? (

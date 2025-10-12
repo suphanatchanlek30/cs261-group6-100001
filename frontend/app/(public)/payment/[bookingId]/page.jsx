@@ -9,7 +9,8 @@ import { FiMapPin, FiMap } from "react-icons/fi";
 import PaymentSummaryCard from "@/components/payment/PaymentSummaryCard";
 import PaymentQRSection from "@/components/payment/PaymentQRSection";
 
-import { getMyBookingOverviewById, formatRangeLocal } from "@/services/bookingService";
+import { getMyBookingOverviewById, formatRangeLocal, formatRangeLocalHotfix } from "@/services/bookingService";
+import { getLocationReviewsOverview } from "@/services/reviewService";
 import { createPayment, attachPaymentProof } from "@/services/paymentService";
 import { uploadImage } from "@/services/uploadService";
 
@@ -21,6 +22,7 @@ export default function PaymentPage() {
     const [err, setErr] = useState("");
 
     const [overview, setOverview] = useState(null); // { booking, unit, location, payment, review, actions }
+    const [reviewStats, setReviewStats] = useState(null); // { avgRating, totalReviews }
     const [showQR, setShowQR] = useState(false);
 
     // สลิป
@@ -39,6 +41,11 @@ export default function PaymentPage() {
                 return;
             }
             setOverview(data);
+            // ดึงสรุปรีวิวของสถานที่เพื่อแสดงคะแนน/จำนวนรีวิว
+            if (data?.location?.id) {
+                const ov = await getLocationReviewsOverview(data.location.id);
+                if (ov.ok) setReviewStats(ov.data?.stats || null);
+            }
             setLoading(false);
         })();
     }, [bookingId]);
@@ -53,10 +60,7 @@ export default function PaymentPage() {
 
     const cover = u?.imageUrl || l?.coverImageUrl || "/placeholder.jpg";
     const unitLabel = u?.code ? `${u.code} · ${u.name}` : u?.name;
-    const { dateText, timeText } = useMemo(() => {
-        if (!b?.startTime || !b?.endTime) return { dateText: "-", timeText: "-" };
-        return formatRangeLocal(b.startTime, b.endTime);
-    }, [b?.startTime, b?.endTime]);
+    const { dateText, timeText } = formatRangeLocalHotfix(b.startTime, b.endTime);
 
     // กดสร้าง QR -> POST /api/payments
     const handleCreateQR = async () => {
@@ -171,8 +175,8 @@ export default function PaymentPage() {
                 dateText={dateText}
                 timeText={timeText + (b?.hours ? ` (${b.hours} ${b.hours > 1 ? "hours" : "hour"})` : "")}
                 total={b?.total}
-                rating={l?.avgRating ?? null}
-                reviewCount={l?.reviewCount ?? null}
+                rating={reviewStats?.avgRating ?? null}
+                reviewCount={reviewStats?.totalReviews ?? null}
                 bookingCode={b?.bookingCode ?? null}
                 canPay={!!actions?.canPay}
                 onCreateQR={handleCreateQR}

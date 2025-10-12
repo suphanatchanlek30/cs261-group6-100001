@@ -2,11 +2,7 @@
 
 package com.nangnaidee.backend.service;
 
-import com.nangnaidee.backend.dto.CreateReviewRequest;
-import com.nangnaidee.backend.dto.CreateReviewResponse;
-import com.nangnaidee.backend.dto.MeResponse;
-import com.nangnaidee.backend.dto.ReviewListItem;
-import com.nangnaidee.backend.dto.ReviewListResponse;
+import com.nangnaidee.backend.dto.*;
 import com.nangnaidee.backend.exception.ConflictException;
 import com.nangnaidee.backend.exception.ForbiddenException;
 import com.nangnaidee.backend.exception.NotFoundException;
@@ -117,5 +113,75 @@ public class ReviewService {
                 .orElseThrow(() -> new NotFoundException("ไม่พบรีวิว"));
 
         reviewRepository.delete(review);
+    }
+
+    public LocationReviewsOverviewResponse getLocationReviewsOverview(
+            java.util.UUID locationId, Integer minRating, int page, int size) {
+
+        // 1) validate location มีจริง (ใช้ของเดิม)
+        com.nangnaidee.backend.model.Location location = locationRepository.findById(locationId)
+                .orElseThrow(() -> new com.nangnaidee.backend.exception.NotFoundException("ไม่พบสถานที่"));
+
+        // 2) ดึงรายการรีวิวแบบเพจ (ใช้ query เดิม)
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<Object[]> reviewPage =
+                reviewRepository.findByLocationIdWithRatingFilter(locationId, minRating, pageable);
+
+        java.util.List<ReviewListItem> items = reviewPage.getContent().stream()
+                .map(row -> new ReviewListItem(
+                        java.util.UUID.fromString((String) row[0]),       // id
+                        java.util.UUID.fromString((String) row[1]),       // booking_id
+                        (Integer) row[2],                                 // user_id
+                        (String) row[3],                                  // user_first_name
+                        (Integer) row[4],                                 // rating
+                        (String) row[5],                                  // comment
+                        ((java.sql.Timestamp) row[6]).toLocalDateTime()   // created_at
+                ))
+                .collect(java.util.stream.Collectors.toList());
+
+        // 3) ดึงสถิติรวม
+        java.util.List<Object[]> rows = reviewRepository.aggregateStatsByLocation(locationId, minRating);
+
+        Double avgRating = null;
+        long totalReviews = 0, reviewers = 0, r5 = 0, r4 = 0, r3 = 0, r2 = 0, r1 = 0;
+
+        if (rows != null && !rows.isEmpty()) {
+            Object[] statsRow = rows.get(0);
+            if (statsRow != null && statsRow.length >= 8) {
+                avgRating    = toDouble(statsRow[0]);
+                totalReviews = toLong(statsRow[1]);
+                reviewers    = toLong(statsRow[2]);
+                r5 = toLong(statsRow[3]);
+                r4 = toLong(statsRow[4]);
+                r3 = toLong(statsRow[5]);
+                r2 = toLong(statsRow[6]);
+                r1 = toLong(statsRow[7]);
+            }
+        }
+
+        RatingStats stats = new RatingStats(avgRating, totalReviews, reviewers, r5, r4, r3, r2, r1);
+
+        return new LocationReviewsOverviewResponse(
+                items,
+                reviewPage.getNumber(),
+                reviewPage.getSize(),
+                reviewPage.getTotalElements(),
+                reviewPage.getTotalPages(),
+                stats
+        );
+    }
+
+    // helpers แปลงชนิดให้ปลอดภัย
+    private static Double toDouble(Object o) {
+        if (o == null) return null;
+        if (o instanceof java.math.BigDecimal bd) return bd.doubleValue();
+        if (o instanceof Number n) return n.doubleValue();
+        return Double.valueOf(o.toString());
+    }
+    private static long toLong(Object o) {
+        if (o == null) return 0L;
+        if (o instanceof java.math.BigDecimal bd) return bd.longValue();
+        if (o instanceof Number n) return n.longValue();
+        return Long.parseLong(o.toString());
     }
 }
