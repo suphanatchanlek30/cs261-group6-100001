@@ -3,11 +3,28 @@
 
 import Link from "next/link";
 import { FiMapPin, FiClock, FiWifi } from "react-icons/fi";
-import StarRating from "@/components/common/StarRating";
+import RatingWithCount from "@/components/common/RatingWithCount";
+import { useEffect, useState } from "react";
+import { getLocationReviewsOverview } from "@/services/reviewService";
 
 export default function SearchResultRow({ item }) {
     const price = item?.priceHourly ?? item?.startingPriceHourly ?? 50;
     const isOpen = !!item?.isActive;
+    const [stats, setStats] = useState(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            if (!item?.id) return;
+            const res = await getLocationReviewsOverview(item.id);
+            if (!cancelled && res.ok) {
+                // Debug: log the full response structure
+                console.log('SearchResultRow overview response:', res.data);
+                setStats(res.data?.stats || res.data || null);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [item?.id]);
 
     return (
         <div className="rounded-[18px] overflow-hidden bg-white shadow-[0_12px_24px_rgba(0,0,0,0.06)] ring-1 ring-black/5">
@@ -37,8 +54,12 @@ export default function SearchResultRow({ item }) {
                         <span aria-hidden="true" className="mx-3 h-3 w-px bg-gray-300" />
 
                         <div className="flex items-center gap-2 text-[#f59e0b]">
-                            <StarRating value={4} size={12} />
-                            <span className="text-gray-500">(584 reviews)</span>
+                            <RatingWithCount
+                              rating={Number(stats?.avgRating) || 0}
+                              count={Number(stats?.totalReviews) || 0}
+                              size={12}
+                              labelClassName="text-gray-500"
+                            />
                         </div>
                     </div>
 

@@ -13,6 +13,7 @@ import {
   cancelBooking,
   formatRangeLocal,
 } from "@/services/bookingService";
+import { getLocationReviewsOverview } from "@/services/reviewService";
 import { useRouter } from "next/navigation";
 
 export default function MyBookingPage() {
@@ -30,6 +31,7 @@ export default function MyBookingPage() {
     total: 0,
     totalPages: 1,
   });
+  const [reviewStatsMap, setReviewStatsMap] = useState({}); // { [locationId]: { avgRating, totalReviews } }
 
   const router = useRouter();
 
@@ -53,6 +55,37 @@ export default function MyBookingPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // เมื่อโหลดรายการแล้ว ดึงสรุปรีวิวของแต่ละสถานที่
+  useEffect(() => {
+    const items = data?.items || [];
+    const ids = Array.from(
+      new Set(
+        items
+          .map((row) => row?.location?.id)
+          .filter(Boolean)
+      )
+    );
+    if (ids.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const res = await getLocationReviewsOverview(id, { page: 0, size: 0 });
+            if (res.ok) return [id, res.data?.stats || null];
+          } catch (_) {}
+          return [id, null];
+        })
+      );
+      if (!cancelled) {
+        const next = Object.fromEntries(entries);
+        setReviewStatsMap((prev) => ({ ...prev, ...next }));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [data]);
 
   const onTabChange = (next) => {
     setTab(next);
@@ -125,6 +158,9 @@ export default function MyBookingPage() {
           const rev = row.review || {};
 
           const key = b.id || `row-${page}-${idx}`;
+          const rs = reviewStatsMap[l.id] || {};
+          const rating = typeof rs.avgRating === "number" ? rs.avgRating : (rev.avgRating ?? null);
+          const reviewCount = typeof rs.totalReviews === "number" ? rs.totalReviews : (rev.ratingCount ?? null);
           const { dateText, timeText } = formatRangeLocal(b.startTime, b.endTime);
           const cover = u.imageUrl || l.coverImageUrl || "/placeholder.jpg";
           const unitLabel = u.code ? `${u.code} · ${u.name}` : u.name;
@@ -137,8 +173,8 @@ export default function MyBookingPage() {
               locationName={l.name}
               unitLabel={unitLabel}
               addressText={l.address}
-              rating={rev.avgRating ?? 0}
-              reviewCount={rev.ratingCount ?? 0}
+              rating={rating}
+              reviewCount={reviewCount}
               capacity={u.capacity ?? 1}
               quiet={false}
               wifi={!!u.shortDesc?.toLowerCase?.().includes("wifi")}

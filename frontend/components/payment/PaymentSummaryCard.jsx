@@ -2,6 +2,7 @@
 "use client";
 import { FiMapPin, FiUsers, FiVolumeX, FiWifi, FiClock } from "react-icons/fi";
 import StatusPill from "./StatusPill";
+import RatingWithCount from "@/components/common/RatingWithCount";
 
 export default function PaymentSummaryCard({
   coverImageUrl,
@@ -32,17 +33,12 @@ export default function PaymentSummaryCard({
       <div className="flex-1 min-w-0 p-5">
         <div className="flex items-center gap-2 mb-1">
           <StatusPill status={status} />
-          {typeof rating === "number" && (
-            <span className="inline-flex items-center gap-1 text-amber-400 text-sm leading-none">
-              {"★".repeat(Math.max(0, Math.min(5, Math.floor(rating))))}
-              <span className="text-neutral-400">
-                {"★".repeat(Math.max(0, 5 - Math.floor(rating || 0)))}
-              </span>
-              {typeof reviewCount === "number" && (
-                <span className="text-neutral-500 text-xs">({reviewCount} reviews)</span>
-              )}
-            </span>
-          )}
+          <RatingWithCount
+            rating={typeof rating === 'number' ? rating : 0}
+            count={typeof reviewCount === 'number' ? reviewCount : 0}
+            size={14}
+            labelClassName="text-neutral-500"
+          />
         </div>
 
         <h2 className="text-lg font-semibold text-gray-800">

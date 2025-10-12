@@ -3,10 +3,26 @@
 
 import Link from "next/link";
 import { FiMapPin, FiClock, FiWifi } from "react-icons/fi";
-import StarRating from "@/components/common/StarRating";
+import RatingWithCount from "@/components/common/RatingWithCount";
+import { useEffect, useState } from "react";
+import { getLocationReviewsOverview } from "@/services/reviewService";
 
 /** การ์ดหน้า Home */
 export default function LocationCard({ loc }) {
+  const [stats, setStats] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!loc?.id) return;
+  const res = await getLocationReviewsOverview(loc.id);
+      if (!cancelled && res.ok) {
+        // Debug: log the full response structure
+        console.log('LocationCard overview response:', res.data);
+        setStats(res.data?.stats || res.data || null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [loc?.id]);
   const address = loc.address || "-";
   const price = loc.priceHourly ?? loc.startingPriceHourly ?? 50; // fallback
 
@@ -48,8 +64,12 @@ export default function LocationCard({ loc }) {
 
       <div className="flex items-end justify-between px-4 pb-4 pt-3">
         <div className="flex items-start flex-col gap-2 text-[12px] text-gray-500">
-          <StarRating value={4.2} size={14} />
-          <span>(584 reviews)</span>
+          <RatingWithCount
+            className="flex items-start flex-col"
+            rating={Number(stats?.avgRating) || 0}
+            count={Number(stats?.totalReviews) || 0}
+            size={14}
+          />
         </div>
         <div className="text-right leading-tight">
           <div className="text-[18px] sm:text-[22px] font-bold text-[#7C3AED]">
