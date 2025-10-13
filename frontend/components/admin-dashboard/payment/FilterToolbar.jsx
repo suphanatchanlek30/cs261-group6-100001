@@ -19,17 +19,17 @@ export default function FilterToolbar({ status, onStatusChange, size, onSizeChan
   ];
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between">
       
       {/* Status filter tabs */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {statusOptions.map(({ value, label }) => {
           const isActive = status === value;
           return (
             <button
               key={value || "ALL"}
               onClick={() => onStatusChange(value)}
-              className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${
+              className={`rounded-full border px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium transition-all ${
                 isActive
                   ? "bg-violet-600 border-violet-600 text-white shadow-md"
                   : "bg-white border-violet-600 text-violet-700 hover:bg-violet-50 hover:shadow-sm"
@@ -42,15 +42,15 @@ export default function FilterToolbar({ status, onStatusChange, size, onSizeChan
       </div>
 
       {/* Search and settings */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
         
         {/* Search input (disabled for now) */}
         <div className="relative">
           <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             disabled
-            placeholder="Search payments (coming soon)"
-            className="pl-9 pr-4 py-2 rounded-lg border border-gray-300 bg-gray-50 text-sm min-w-[200px] focus:outline-none"
+            placeholder="Search payments..."
+            className="w-full sm:min-w-[180px] pl-9 pr-4 py-2 rounded-lg border border-gray-300 bg-gray-50 text-sm focus:outline-none"
           />
         </div>
 
@@ -58,7 +58,7 @@ export default function FilterToolbar({ status, onStatusChange, size, onSizeChan
         <select
           value={size}
           onChange={(e) => onSizeChange(Number(e.target.value))}
-          className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          className="w-full sm:w-auto rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
         >
           {[10, 20, 50, 100].map((pageSize) => (
             <option key={pageSize} value={pageSize}>

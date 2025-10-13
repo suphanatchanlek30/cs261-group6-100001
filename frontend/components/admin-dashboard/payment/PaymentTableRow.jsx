@@ -5,13 +5,14 @@ import StatusPill from "./StatusPill";
 import SlipPreview from "./SlipPreview";
 
 /**
- * Single row component for payment table with all payment details and actions
+ * Single row component for payment table with responsive layout
  * @param {object} payment - Payment data object
  * @param {function} onSlipPreview - Callback when slip preview is clicked
  * @param {function} onApprove - Callback when approve button is clicked
  * @param {function} onReject - Callback when reject button is clicked
+ * @param {string} viewType - "table" or "card" layout
  */
-export default function PaymentTableRow({ payment, onSlipPreview, onApprove, onReject }) {
+export default function PaymentTableRow({ payment, onSlipPreview, onApprove, onReject, viewType = "table" }) {
   
   // Copy text to clipboard with feedback
   const copyToClipboard = (text) => {
@@ -40,8 +41,95 @@ export default function PaymentTableRow({ payment, onSlipPreview, onApprove, onR
     return amount || "0.00";
   };
 
+  // Card layout for mobile
+  if (viewType === "card") {
+    return (
+      <div className="p-4 hover:bg-gray-50 transition-colors">
+        <div className="space-y-4">
+          
+          {/* Header: Slip + Amount + Status */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <SlipPreview 
+                slipUrl={payment.proofUrl} 
+                onPreview={onSlipPreview}
+              />
+              <div>
+                <div className="font-bold text-violet-700 text-lg">
+                  ฿{formatAmount(payment.amount)}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {formatDate(payment.createdAt)}
+                </div>
+              </div>
+            </div>
+            <StatusPill value={payment.status} />
+          </div>
+
+          {/* Payment Details */}
+          <div className="space-y-2">
+            {/* Payment ID */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Payment ID:</span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-900 text-sm">{payment.paymentId}</span>
+                <button 
+                  className="text-gray-400 hover:text-violet-600 transition-colors p-1 rounded" 
+                  onClick={() => copyToClipboard(payment.paymentId)}
+                >
+                  <FiCopy className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Booking ID */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Booking ID:</span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-900 text-sm">{payment.bookingId}</span>
+                <button 
+                  className="text-gray-400 hover:text-violet-600 transition-colors p-1 rounded" 
+                  onClick={() => copyToClipboard(payment.bookingId)}
+                >
+                  <FiCopy className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Payment Method */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Method:</span>
+              <span className="text-sm text-gray-700">{payment.method || "Not specified"}</span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          {payment.status === "PENDING" && (
+            <div className="flex gap-2 pt-2 border-t border-gray-100">
+              <button
+                onClick={() => onApprove(payment)}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-colors"
+              >
+                <FiCheckCircle className="w-4 h-4" />
+                Approve
+              </button>
+              <button
+                onClick={() => onReject(payment)}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-rose-50 border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-colors"
+              >
+                <FiXCircle className="w-4 h-4" />
+                Reject
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Table layout for desktop
   return (
-    <tr className="border-t hover:bg-gray-50 transition-colors">
+    <tr className="hover:bg-gray-50 transition-colors">
       
       {/* Slip Preview */}
       <td className="px-4 py-3 align-top">
@@ -60,7 +148,7 @@ export default function PaymentTableRow({ payment, onSlipPreview, onApprove, onR
             <button 
               className="text-gray-400 hover:text-violet-600 transition-colors" 
               onClick={() => copyToClipboard(payment.paymentId)}
-              title="คัดลอก Payment ID"
+              title="Copy Payment ID"
             >
               <FiCopy className="w-3 h-3" />
             </button>
@@ -73,7 +161,7 @@ export default function PaymentTableRow({ payment, onSlipPreview, onApprove, onR
             <button 
               className="text-gray-400 hover:text-violet-600 transition-colors" 
               onClick={() => copyToClipboard(payment.bookingId)}
-              title="คัดลอก Booking ID"
+              title="Copy Booking ID"
             >
               <FiCopy className="w-3 h-3" />
             </button>
@@ -81,7 +169,7 @@ export default function PaymentTableRow({ payment, onSlipPreview, onApprove, onR
           
           {/* Payment Method */}
           <div className="text-xs text-gray-500">
-            Method: {payment.method || "ไม่ระบุ"}
+            Method: {payment.method || "Not specified"}
           </div>
         </div>
       </td>
@@ -112,18 +200,18 @@ export default function PaymentTableRow({ payment, onSlipPreview, onApprove, onR
             <button
               onClick={() => onApprove(payment)}
               className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-1 text-sm font-semibold text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-colors"
-              title="อนุมัติ"
+              title="Approve"
             >
               <FiCheckCircle className="w-4 h-4" />
-              อนุมัติ
+              Approve
             </button>
             <button
               onClick={() => onReject(payment)}
               className="inline-flex items-center gap-1 rounded-lg bg-rose-50 border border-rose-200 px-3 py-1 text-sm font-semibold text-rose-700 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-colors"
-              title="ปฏิเสธ"
+              title="Reject"
             >
               <FiXCircle className="w-4 h-4" />
-              ปฏิเสธ
+              Reject
             </button>
           </div>
         ) : (

@@ -10,8 +10,8 @@ import { FiImage, FiZoomIn } from "react-icons/fi";
 export default function SlipPreview({ slipUrl, onPreview }) {
   if (!slipUrl) {
     return (
-      <div className="flex items-center justify-center w-16 h-12 rounded-lg border border-dashed border-gray-200 bg-gray-50">
-        <FiImage className="w-4 h-4 text-gray-400" />
+      <div className="flex items-center justify-center w-12 h-10 sm:w-16 sm:h-12 rounded-lg border border-dashed border-gray-200 bg-gray-50">
+        <FiImage className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
       </div>
     );
   }
@@ -19,7 +19,7 @@ export default function SlipPreview({ slipUrl, onPreview }) {
   return (
     <button
       onClick={() => onPreview(slipUrl)}
-      className="group relative block w-16 h-12 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105"
+      className="group relative block w-12 h-10 sm:w-16 sm:h-12 lg:w-20 lg:h-14 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105"
       title="คลิกเพื่อดูสลิปขนาดใหญ่"
     >
       {/* Main image */}
@@ -34,7 +34,7 @@ export default function SlipPreview({ slipUrl, onPreview }) {
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center">
         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <div className="bg-white rounded-full p-1 shadow-lg">
-            <FiZoomIn className="w-3 h-3 text-violet-600" />
+            <FiZoomIn className="w-2 h-2 sm:w-3 sm:h-3 text-violet-600" />
           </div>
         </div>
       </div>
