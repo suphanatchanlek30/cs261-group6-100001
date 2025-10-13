@@ -281,7 +281,7 @@ export default function AdminPaymentTable() {
                 <tr>
                   <td colSpan={6} className="p-6 text-center text-gray-500">
                     <div className="flex flex-col items-center gap-2">
-                      <span className="text-2xl">📄</span>
+                      {/* <span className="text-2xl">📄</span> */}
                       <span>No payments found</span>
                     </div>
                   </td>

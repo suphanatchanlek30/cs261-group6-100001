@@ -2,11 +2,10 @@
 
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { FiEdit2, FiTrash2, FiImage } from "react-icons/fi";
 import Swal from "sweetalert2";
 import { getLocations, getAllLocations, deleteLocation } from "@/services/locationService";
+import LocationTableRow from "./LocationTableRow";
 
 export default function ManageLocationTable({
   keyword = "",
@@ -105,98 +104,105 @@ export default function ManageLocationTable({
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-       <div className="overflow-x-auto">
-      <div className="grid grid-cols-12 px-4 py-3 text-sm font-semibold text-gray-800 border-b border-gray-200">
-        <div className="col-span-2">Image</div>
-        <div className="col-span-4">Place name</div>
-        <div className="col-span-4">Address</div>
-        <div className="col-span-1 text-center">Status</div>
-        <div className="col-span-1 text-center">Manage</div>
-      </div>
-
-      {loading ? (
-        <div className="p-6 text-center text-gray-500">Loading...</div>
-      ) : err ? (
-        <div className="p-6 text-center text-red-600">{err}</div>
-      ) : items.length === 0 ? (
-        <div className="p-6 text-center text-gray-500">No locations</div>
-      ) : (
-        <ul className="divide-y">
-          {items.map((it) => {
-            const isDeleting = deletingIds.has(it.id);
-            return (
-              <li
-                key={it.id}
-                className={`grid grid-cols-12 items-center px-4 py-3 border-b border-gray-200 ${
-                  isDeleting ? "opacity-50 pointer-events-none" : "hover:bg-gray-50"
-                }`}
-              >
-                <div className="sm:col-span-2 flex justify-center sm:justify-start">
-                  {it.coverImageUrl ? (
-                    <div className="relative w-28 h-16 sm:w-18 md:w-20 xl:w-45 rounded-md overflow-hidden">
-                      <img src={it.coverImageUrl} alt={it.name} className="w-full h-full object-cover" />
-                    </div>
-                  ) : (
-                    <div className="w-20 h-14 rounded-md border flex items-center justify-center text-gray-400">
-                      <FiImage />
-                    </div>
-                  )}
-                </div>
-
-                {/* คลิกชื่อ → หน้า detail */}
-                <div className="sm:col-span-4">
-                  <Link
-                    href={`/admin/locations/${it.id}`}
-                    className="font-medium text-[#7C3AED] hover:text-[#7C3AED] transition underline"
-                    title="ดูรายละเอียดสถานที่"
-                  >
-                    {it.name}
-                  </Link>
-                  <div className="text-xs text-gray-400">id : {it.id}</div>
-                </div>
-
-                <div className="sm:col-span-4 text-gray-600 text-sm flex wrap">{it.address}</div>
-
-                <div className="col-span-1 text-center">
-                  {(it.isActive ?? it.active) ? (
-                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700 border border-green-200">
-                      Active
-                    </span>
-                  ) : (
-                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700 border border-red-200">
-                      Inactive
-                    </span>
-                  )}
-                </div>
-
-                <div className="col-span-1">
-                  <div className="flex items-center justify-center gap-2 md:gap-4 text-[#7C3AED]">
-                    <Link
-                      href={`/admin/locations/${it.id}/edit`}
-                      className="hover:text-[#5c23cf]"
-                      title="Edit location"
-                    >
-                      <FiEdit2 />
-                    </Link>
-
-                    <button
-                      onClick={() => handleDelete(it.id, it.name)}
-                      className={`hover:text-[#5c23cf] ${isDeleting ? "opacity-50 cursor-not-allowed" : ""}`}
-                      title="Delete"
-                      disabled={isDeleting}
-                    >
-                      <FiTrash2 />
-                    </button>
+      
+      {/* Desktop Table View */}
+      <div className="hidden lg:block overflow-x-auto">
+        <table className="min-w-full">
+          <thead className="border-b border-gray-200">
+            <tr>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-800">Image</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-800">Location Details</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-800">Address</th>
+              <th className="px-4 py-3 text-center text-sm font-semibold text-gray-800">Status</th>
+              <th className="px-4 py-3 text-center text-sm font-semibold text-gray-800">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {loading ? (
+              <tr>
+                <td colSpan={5} className="p-6 text-center text-gray-500">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-violet-200 border-t-violet-600"></div>
+                    <span>Loading locations...</span>
                   </div>
-                </div>
-                
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                </td>
+              </tr>
+            ) : err ? (
+              <tr>
+                <td colSpan={5} className="p-6 text-center text-red-600">
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="text-2xl">⚠️</span>
+                    <span>{err}</span>
+                  </div>
+                </td>
+              </tr>
+            ) : items.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="p-6 text-center text-gray-500">
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="text-2xl">🏢</span>
+                    <span>No locations found</span>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              items.map((location) => (
+                <LocationTableRow
+                  key={location.id}
+                  location={location}
+                  onDelete={handleDelete}
+                  viewType="table"
+                  isDeleting={deletingIds.has(location.id)}
+                />
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
+      {/* Mobile/Tablet Card View */}
+      <div className="lg:hidden divide-y divide-gray-100">
+        {loading ? (
+          <div className="p-6 text-center text-gray-500">
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-violet-200 border-t-violet-600"></div>
+              <span>Loading locations...</span>
+            </div>
+          </div>
+        ) : err ? (
+          <div className="p-6 text-center">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-2xl">⚠️</span>
+                <span className="text-red-700 font-medium">Error</span>
+                <span className="text-red-600 text-sm">{err}</span>
+              </div>
+            </div>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="p-6 text-center text-gray-500">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center">
+                <span className="text-2xl">🏢</span>
+              </div>
+              <div>
+                <p className="font-medium">No locations found</p>
+                <p className="text-sm text-gray-400">Try changing your search or add a new location</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          items.map((location) => (
+            <LocationTableRow
+              key={location.id}
+              location={location}
+              onDelete={handleDelete}
+              viewType="card"
+              isDeleting={deletingIds.has(location.id)}
+            />
+          ))
+        )}
+      </div>
       {!modeAll && totalPages > 1 && (
         <div className="flex items-center justify-between px-4 py-3 border-t text-sm">
           <div className="text-gray-600">
