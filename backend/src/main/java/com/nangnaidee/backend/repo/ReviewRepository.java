@@ -59,4 +59,51 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
                                                       @Param("minRating") Integer minRating);
 
 
+    @Query(value = """
+        SELECT 
+            r.id            AS review_id,
+            r.booking_id    AS booking_id,
+            r.user_id       AS user_id,
+            u.full_name     AS user_name,
+            r.rating        AS rating,
+            r.comment       AS comment,
+            r.created_at    AS created_at,
+            l.id            AS location_id,
+            l.name          AS location_name,
+            l.cover_image_url AS cover_image_url
+        FROM dbo.reviews r
+        JOIN dbo.users u     ON u.id = r.user_id
+        JOIN dbo.locations l ON l.id = r.location_id
+        WHERE 
+            (:locationId IS NULL OR r.location_id = :locationId)
+            AND (:minRating IS NULL OR r.rating >= :minRating)
+            AND (
+                :q IS NULL OR
+                LOWER(u.full_name) LIKE LOWER(CONCAT('%', :q, '%')) OR
+                LOWER(l.name)      LIKE LOWER(CONCAT('%', :q, '%')) OR
+                LOWER(COALESCE(r.comment,'')) LIKE LOWER(CONCAT('%', :q, '%'))
+            )
+        """,
+            countQuery = """
+        SELECT COUNT(*) 
+        FROM dbo.reviews r
+        JOIN dbo.users u     ON u.id = r.user_id
+        JOIN dbo.locations l ON l.id = r.location_id
+        WHERE 
+            (:locationId IS NULL OR r.location_id = :locationId)
+            AND (:minRating IS NULL OR r.rating >= :minRating)
+            AND (
+                :q IS NULL OR
+                LOWER(u.full_name) LIKE LOWER(CONCAT('%', :q, '%')) OR
+                LOWER(l.name)      LIKE LOWER(CONCAT('%', :q, '%')) OR
+                LOWER(COALESCE(r.comment,'')) LIKE LOWER(CONCAT('%', :q, '%'))
+            )
+        """,
+            nativeQuery = true)
+    Page<Object[]> adminSearchReviews(
+            @Param("q") String q,
+            @Param("locationId") UUID locationId,
+            @Param("minRating") Integer minRating,
+            Pageable pageable
+    );
 }
