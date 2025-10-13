@@ -175,26 +175,26 @@ export default function PaymentTableRow({ payment, onSlipPreview, onApprove, onR
       </td>
 
       {/* Amount */}
-      <td className="px-4 py-3 align-top">
+      <td className="px-4 py-3 align-center">
         <div className="font-bold text-violet-700 text-lg">
           ฿{formatAmount(payment.amount)}
         </div>
       </td>
 
       {/* Status */}
-      <td className="px-4 py-3 align-top">
+      <td className="px-4 py-3 align-center">
         <StatusPill value={payment.status} />
       </td>
 
       {/* Created Date */}
-      <td className="px-4 py-3 align-top">
+      <td className="px-4 py-3 align-center">
         <div className="text-gray-700 text-sm">
           {formatDate(payment.createdAt)}
         </div>
       </td>
 
       {/* Actions */}
-      <td className="px-4 py-3 align-top">
+      <td className="px-4 py-3 align-center">
         {payment.status === "PENDING" ? (
           <div className="flex items-center gap-2">
             <button
