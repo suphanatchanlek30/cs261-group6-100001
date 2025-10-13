@@ -21,22 +21,23 @@ export default function PageHeader({
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <h2 className="text-lg font-semibold text-[#1F2937]">{title}</h2>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="flex items-center gap-2 w-full md:w-[360px] rounded-lg border border-gray-200 bg-white px-3 py-2">
-            <FiSearch className="text-gray-500" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 w-full sm:flex-1 md:w-[360px] rounded-lg border border-gray-200 bg-white px-3 py-2.5">
+            <FiSearch className="text-gray-500 flex-shrink-0" />
             <input
               type="text"
               placeholder={placeholder}
               onChange={(e) => onSearch?.(e.target.value)}
-              className="w-full outline-none text-sm"
+              className="w-full outline-none text-sm placeholder:text-gray-400"
             />
           </div>
           <button
             onClick={onAdd}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#7C3AED] text-white px-4 py-2 text-sm font-semibold shadow hover:bg-[#6B2FE5]"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-[#7C3AED] text-white px-4 py-2.5 text-sm font-semibold shadow hover:bg-[#6B2FE5] transition-colors whitespace-nowrap"
           >
             <FiPlus className="text-base" />
-            Add Location
+            <span className="hidden sm:inline">Add Location</span>
+            <span className="sm:hidden">Add Location</span>
           </button>
         </div>
       </div>

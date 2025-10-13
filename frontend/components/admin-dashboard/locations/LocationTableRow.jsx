@@ -25,64 +25,72 @@ export default function LocationTableRow({ location, onDelete, viewType = "table
         <div className="space-y-4">
           
           {/* Header: Image + Name + Status */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <LocationImagePreview 
-                imageUrl={location.coverImageUrl} 
-                locationName={location.name}
-              />
-              <div className="flex-1">
+          <div className="flex items-center sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="flex-shrink-0">
+                <LocationImagePreview 
+                  imageUrl={location.coverImageUrl} 
+                  locationName={location.name}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
                 <Link
                   href={`/admin/locations/${location.id}`}
-                  className="font-semibold text-violet-700 hover:text-violet-800 transition-colors text-sm block"
+                  className="font-semibold text-violet-700 hover:text-violet-800 transition-colors text-sm block truncate"
                   title="View location details"
                 >
                   {location.name}
                 </Link>
-                <div className="text-xs text-gray-500 mt-0.5 font-mono">
+                <div className="text-xs text-gray-500 mt-0.5 font-mono truncate">
                   ID: {location.id.substring(0, 8)}...
                 </div>
               </div>
             </div>
-            <LocationStatusPill isActive={isActive} />
+            <div className="flex-shrink-0">
+              <LocationStatusPill isActive={isActive} />
+            </div>
           </div>
 
           {/* Address */}
-          <div className="space-y-2">
+          <div className="bg-gray-50 rounded-lg p-3">
             <div className="flex items-start gap-2">
               <FiMapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <span className="text-sm text-gray-700">{location.address}</span>
-              </div>
+              <span className="text-sm text-gray-700 leading-relaxed">{location.address}</span>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 pt-2 border-t border-gray-100">
+          <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-gray-100">
+            {/* View Details - Full width on mobile, flex on larger screens */}
             <Link
               href={`/admin/locations/${location.id}`}
-              className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-violet-50 border border-violet-200 px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-100 transition-colors"
+              className="w-full sm:flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5 text-sm font-semibold text-violet-700 hover:bg-violet-100 transition-colors"
             >
               <FiExternalLink className="w-4 h-4" />
-              View Details
+              <span className="hidden sm:inline">View Details</span>
+              <span className="sm:hidden">View</span>
             </Link>
-            <Link
-              href={`/admin/locations/${location.id}/edit`}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-50 border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
-              title="Edit location"
-            >
-              <FiEdit2 className="w-4 h-4" />
-              Edit
-            </Link>
-            <button
-              onClick={() => onDelete(location.id, location.name)}
-              disabled={isDeleting}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-50 border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Delete location"
-            >
-              <FiTrash2 className="w-4 h-4" />
-              Delete
-            </button>
+            
+            {/* Edit & Delete - Side by side on mobile */}
+            <div className="flex gap-2 sm:contents">
+              <Link
+                href={`/admin/locations/${location.id}/edit`}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                title="Edit location"
+              >
+                <FiEdit2 className="w-4 h-4" />
+                <span>Edit</span>
+              </Link>
+              <button
+                onClick={() => onDelete(location.id, location.name)}
+                disabled={isDeleting}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-lg bg-rose-50 border border-rose-200 px-3 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Delete location"
+              >
+                <FiTrash2 className="w-4 h-4" />
+                <span>Delete</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
