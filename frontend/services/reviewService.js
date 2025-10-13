@@ -66,3 +66,69 @@ export async function getLocationReviewsOverview(locationId, params = {}) {
     return { ok: false, message };
   }
 }
+
+/**
+ * รับรายการรีวิวทั้งหมดสำหรับ admin
+ * @param {number} page - หมายเลขหน้า (0-based)
+ * @param {number} size - จำนวนรายการต่อหน้า
+ * @returns {Promise<{ok: boolean, data?: any, message?: string}>}
+ */
+export async function getAdminReviews(page = 0, size = 10) {
+  try {
+    const response = await axios.get(`/admin/reviews`, {
+      params: { page, size }
+    });
+
+    return {
+      ok: true,
+      data: response.data,
+    };
+  } catch (error) {
+    console.error("getAdminReviews error:", error);
+    
+    if (error.response?.status === 401) {
+      return { ok: false, message: "ไม่ได้รับอนุญาต กรุณาเข้าสู่ระบบใหม่" };
+    }
+    if (error.response?.status === 403) {
+      return { ok: false, message: "เฉพาะ Admin เท่านั้นที่เข้าถึงได้" };
+    }
+    
+    return {
+      ok: false,
+      message: error.response?.data?.message || error.message || "เกิดข้อผิดพลาดในการโหลดรีวิว"
+    };
+  }
+}
+
+/**
+ * ลบรีวิวโดย admin
+ * @param {string} reviewId - UUID ของรีวิวที่จะลบ
+ * @returns {Promise<{ok: boolean, message?: string}>}
+ */
+export async function deleteAdminReview(reviewId) {
+  try {
+    await axios.delete(`/admin/reviews/${reviewId}`);
+    
+    return {
+      ok: true,
+      message: "ลบรีวิวสำเร็จ"
+    };
+  } catch (error) {
+    console.error("deleteAdminReview error:", error);
+    
+    if (error.response?.status === 401) {
+      return { ok: false, message: "ไม่ได้รับอนุญาต กรุณาเข้าสู่ระบบใหม่" };
+    }
+    if (error.response?.status === 403) {
+      return { ok: false, message: "เฉพาะ Admin เท่านั้นที่สามารถลบรีวิวได้" };
+    }
+    if (error.response?.status === 404) {
+      return { ok: false, message: "ไม่พบรีวิวที่ต้องการลบ" };
+    }
+    
+    return {
+      ok: false,
+      message: error.response?.data?.message || error.message || "เกิดข้อผิดพลาดในการลบรีวิว"
+    };
+  }
+}
