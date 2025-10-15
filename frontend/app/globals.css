@@ -1,2 +1,53 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
+
+* {
+  font-family: var(--font-noto-sans-thai), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* NicoMoji font */
+
+@font-face {
+  font-family: 'NicoMoji';
+  src: url('/font/NicoMoji-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.nicomoji {
+  font-family: 'NicoMoji', ui-sans-serif, system-ui;
+}
+
+:root {
+  --font-nicomoji: 'NicoMoji', ui-sans-serif, system-ui;
+}
+
+.font-nicomoji {
+  font-family: var(--font-nicomoji);
+}
+
+body {
+  font-family: var(--font-inter);
+}
+
+
+/* Prompt font*/
+
+@font-face {
+  font-family: 'Prompt';
+  src: url('/font/Prompt-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+.text-outline {
+  text-shadow: 
+    -1px -1px 0 #4B5563, 
+     1px -1px 0 #4B5563,
+    -1px  1px 0 #4B5563,
+     1px  1px 0 #4B5563;
+}
