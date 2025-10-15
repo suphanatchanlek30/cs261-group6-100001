@@ -15,6 +15,7 @@ import {
 } from "@/services/bookingService";
 import { getLocationReviewsOverview } from "@/services/reviewService";
 import { useRouter } from "next/navigation";
+import { isAuthenticated } from "@/utils/authClient";
 
 export default function MyBookingPage() {
   // tab: HOLD | PENDING_REVIEW | CONFIRMED | CANCELLED | EXPIRED | undefined
@@ -32,6 +33,7 @@ export default function MyBookingPage() {
     totalPages: 1,
   });
   const [reviewStatsMap, setReviewStatsMap] = useState({}); // { [locationId]: { avgRating, totalReviews } }
+  const [authed, setAuthed] = useState(null); // null: unknown, true/false after check
 
   const router = useRouter();
 
@@ -52,9 +54,29 @@ export default function MyBookingPage() {
     setLoading(false);
   }, [tab, page, size]);
 
+  // Watch auth status and fetch only when authenticated
   useEffect(() => {
-    load();
-  }, [load]);
+    const check = () => setAuthed(isAuthenticated());
+    check();
+    if (typeof window !== "undefined") {
+      window.addEventListener("auth-changed", check);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("auth-changed", check);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (authed === true) {
+      load();
+    } else if (authed === false) {
+      // ensure not showing backend error when unauthenticated
+      setLoading(false);
+      setErr("");
+    }
+  }, [authed, load]);
 
   // เมื่อโหลดรายการแล้ว ดึงสรุปรีวิวของแต่ละสถานที่
   useEffect(() => {
@@ -140,15 +162,31 @@ export default function MyBookingPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
       <h1 className="text-2xl font-semibold text-violet-600">My booking</h1>
-      <FilterTabs value={tab} onChange={onTabChange} />
+      {authed && <FilterTabs value={tab} onChange={onTabChange} />}
 
-      {loading && <div className="mt-6">Loading...</div>}
-      {err && !loading && <div className="mt-6 text-rose-600">{err}</div>}
+      {authed === false && (
+        <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
+          <p className="text-neutral-700">กรุณาเข้าสู่ระบบเพื่อดูรายละเอียดการจองของคุณ</p>
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.push(`/login?next=/my-booking`)}
+              className="h-10 w-40 rounded-xl bg-violet-600 font-semibold text-white hover:bg-violet-700 transition"
+            >
+              เข้าสู่ระบบ
+            </button>
+          </div>
+        </div>
+      )}
 
-      {!loading && !err && items.length === 0 && (
+      {authed && loading && <div className="mt-6">Loading...</div>}
+      {authed && err && !loading && <div className="mt-6 text-rose-600">{err}</div>}
+
+      {authed && !loading && !err && items.length === 0 && (
         <EmptyState onGoSearch={() => (window.location.href = "/search")} />
       )}
 
+      {authed && (
       <div className="mt-4 space-y-4">
         {items.map((row, idx) => {
           const b = row.booking || {};
@@ -195,9 +233,10 @@ export default function MyBookingPage() {
           );
         })}
       </div>
+      )}
 
       {/* ใช้ Pagination แบบเดียวกับหน้า Search: รับ { page, totalPages, setPage } */}
-      {items.length > 0 && (
+      {authed && items.length > 0 && (
         <Pagination page={page} totalPages={totalPages} setPage={setPage} />
       )}
     </div>
