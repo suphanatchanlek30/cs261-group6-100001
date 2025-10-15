@@ -1,0 +1,30 @@
+services:
+  backend:
+    build: ./backend
+    container_name: nn-backend
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_HOST=${DB_HOST:-host.docker.internal}
+      - DB_PORT=${DB_PORT:-1433}
+      - DB_NAME=${MSSQL_DB}
+      - DB_USERNAME=${DB_USERNAME:-sa}
+      - DB_PASSWORD=${MSSQL_SA_PASSWORD}
+      - APP_JWT_SECRET=${APP_JWT_SECRET}
+      - APP_JWT_EXPIRATION=${APP_JWT_EXPIRATION}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: nn-frontend
+    environment:
+      - NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped

@@ -6,8 +6,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.util.UUID;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "bookings", schema = "dbo")
@@ -35,10 +37,10 @@ public class Booking {
     @Column(name = "total", nullable = false, precision = 10, scale = 2)
     private java.math.BigDecimal total;
 
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "status", nullable = false, length = 20, columnDefinition = "NVARCHAR(20)")
     private String status;
 
-    @Column(name = "booking_code", length = 32)
+    @Column(name = "booking_code", length = 32, columnDefinition = "NVARCHAR(32)")
     private String bookingCode;
 
     @Column(name = "created_at", nullable = false)
