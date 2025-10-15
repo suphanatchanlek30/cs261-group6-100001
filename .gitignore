@@ -1,0 +1,16 @@
+# env files
+.env
+frontend/.env.local
+
+# Node
+node_modules
+.next
+
+# Java/Maven
+target
+*.log
+
+# Editors / OS
+.vscode
+.idea
+**/.DS_Store

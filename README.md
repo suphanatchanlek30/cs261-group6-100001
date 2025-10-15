@@ -59,6 +59,69 @@ git pull --rebase
   * `refactor` = ปรับโครงสร้างโค้ด ไม่เปลี่ยนพฤติกรรม
 * `<short-kebab-title>`: คำสั้นๆ เชิงคำอธิบาย ใช้ขีด `-` คั่น
 
+---
+
+## Docker Quickstart (Backend + Frontend เชื่อมต่อ SQL Server ภายนอก)
+
+**สำหรับผู้ที่มี SQL Server ติดตั้งในเครื่องอยู่แล้ว**
+
+1) เตรียมตัวแปรสภาพแวดล้อม
+
+```powershell
+Copy-Item .env.example .env -Force
+Copy-Item frontend/.env.local.example frontend/.env.local -Force
+```
+
+เปิดแก้ไฟล์ `.env` แล้วกำหนดค่าให้ตรงกับ SQL Server ที่มีอยู่:
+- **DB_HOST=host.docker.internal** (สำหรับเชื่อมต่อจาก Docker ไปยัง localhost)
+- **DB_PORT=1433** (หรือพอร์ตที่ SQL Server ใช้)
+- **DB_USERNAME=sa** (หรือ username ที่ใช้)
+- **MSSQL_SA_PASSWORD=รหัสผ่าน SQL Server**
+- **MSSQL_DB=ชื่อฐานข้อมูลที่มีอยู่แล้ว** (เช่น NangNaideeDB2)
+- **APP_JWT_SECRET=สตริงยาวๆ แบบสุ่ม**
+- **APP_JWT_EXPIRATION=604800000**
+- ค่า Cloudinary หากใช้งาน (ว่างได้)
+
+ตรวจสอบ `frontend/.env.local` ให้มี:
+- NEXT_PUBLIC_URL=http://localhost:8080/api
+
+2) **สำคัญ:** ตรวจสอบว่า SQL Server เปิดรับ TCP/IP connections
+
+- เปิด **SQL Server Configuration Manager**
+- ไปที่ **SQL Server Network Configuration** > **Protocols for MSSQLSERVER**
+- ตรวจสอบว่า **TCP/IP** เป็น **Enabled**
+- Restart SQL Server service หากเพิ่งเปิด TCP/IP
+
+3) สร้างฐานข้อมูลใน SQL Server (ถ้ายังไม่มี)
+
+เปิด **SQL Server Management Studio (SSMS)** หรือใช้ `sqlcmd`:
+```sql
+CREATE DATABASE NangNaideeDB2;
+GO
+```
+
+4) เปิด Docker Desktop (Windows) ให้ขึ้นสถานะ Running และใช้ Linux containers
+
+5) รันทั้งโปรเจ็กต์จากโฟลเดอร์ root ของ repo
+
+```powershell
+docker compose up --build
+```
+
+เมื่อสำเร็จ:
+- SQL Server: localhost:1433 (ใช้งานตามปกติ)
+- Backend: http://localhost:8080 (health: /api/health)
+- Frontend: http://localhost:3000
+
+คำสั่งที่ใช้บ่อย:
+
+```powershell
+docker compose up -d --build     # รันเบื้องหลัง
+docker compose logs -f backend   # ดู log ของ backend
+docker compose down              # ปิดทุก service
+docker compose down -v           # ปิดและล้าง volume (ล้างฐานข้อมูล)
+```
+
 **ตัวอย่าง**
 
 * `fe/feat-auth-ui` — ทำหน้า UI Login/Register
