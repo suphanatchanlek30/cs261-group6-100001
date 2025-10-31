@@ -2,36 +2,37 @@
 
 package com.nangnaidee.backend.model;
 
-
 import jakarta.persistence.*;
 import lombok.*;
-
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
-@Entity @Table(name = "users")
+@Entity
+@Table(name = "users")
 public class User {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
     @ToString.Include
     private Integer id;
 
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(nullable = false, unique = true, length = 255, columnDefinition = "NVARCHAR(255)")
     @EqualsAndHashCode.Include
     @ToString.Include
     private String email;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(name = "password_hash", nullable = false, length = 255, columnDefinition = "NVARCHAR(255)")
     private String passwordHash;
 
-    @Column(name = "full_name", length = 255)
+    @Column(name = "full_name", length = 255, columnDefinition = "NVARCHAR(255)")
     @ToString.Include
     private String fullName;
 
@@ -42,11 +43,7 @@ public class User {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<Role> roles = new HashSet<>();

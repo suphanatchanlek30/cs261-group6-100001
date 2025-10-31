@@ -19,22 +19,22 @@ public class Payment {
 
     @Id
     @GeneratedValue
-    private UUID id;  // Hibernate จะ generate id เอง
+    private UUID id; // Hibernate จะ generate id เอง
 
     @OneToOne
     @JoinColumn(name = "booking_id", nullable = false, unique = true)
-    private Booking booking;  // เชื่อมกับ Booking entity
+    private Booking booking; // เชื่อมกับ Booking entity
 
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false, length = 30, columnDefinition = "NVARCHAR(30)")
     private String method = "QR";
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
-    @Column(name = "proof_url", length = 600)
+    @Column(name = "proof_url", length = 600, columnDefinition = "NVARCHAR(600)")
     private String proofUrl;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 20, columnDefinition = "NVARCHAR(20)")
     private String status = "PENDING";
 
     @ManyToOne
