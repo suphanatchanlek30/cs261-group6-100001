@@ -17,6 +17,13 @@ import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // (เพิ่ม)
+import com.nangnaidee.backend.dto.HostLocationListItem; // (เพิ่ม)
+import com.nangnaidee.backend.dto.HostLocationDetailResponse; // (เพิ่ม)
+import com.nangnaidee.backend.exception.NotFoundException; // (เพิ่ม)
+import com.nangnaidee.backend.model.LocationUnit; // (เพิ่ม)
+import com.nangnaidee.backend.repo.LocationUnitRepository; // (เพิ่ม)
+
+import java.util.List; // (เพิ่ม)
 
 import java.util.List;
 import java.util.Set;
@@ -30,6 +37,7 @@ public class HostService {
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final LocationRepository locationRepository; // (เพิ่ม)
+    private final LocationUnitRepository locationUnitRepository; // (เพิ่ม)
 
     /**
      * ดึงข้อมูลโปรไฟล์ /me ของ Host
@@ -109,5 +117,101 @@ public class HostService {
         Location saved = locationRepository.save(loc);
 
         return new CreateDraftLocationResponse(saved.getId(), "DRAFT");
+    }
+
+    /**
+     * (เมธอดใหม่) ดึงรายการสถานที่ของ Host ที่ล็อกอินอยู่
+     * @param authorizationHeader "Bearer <token>"
+     * @param status (Optional) "DRAFT" หรือ "APPROVED"
+     * @return List<HostLocationListItem>
+     */
+    @Transactional(readOnly = true)
+    public List<HostLocationListItem> getMyLocations(String authorizationHeader, String status) {
+        // 1. ยืนยันตัวตนว่าเป็น HOST
+        MeResponse hostProfile = getHostProfile(authorizationHeader);
+        Integer hostId = hostProfile.getId();
+
+        // 2. ดึงข้อมูล Location จากฐานข้อมูล
+        List<Location> locations;
+        String statusUpper = (status == null) ? null : status.trim().toUpperCase();
+
+        if ("DRAFT".equals(statusUpper)) {
+            // ดึงเฉพาะ Draft (isActive = false)
+            locations = locationRepository.findByOwnerIdAndIsActiveOrderByCreatedAtDesc(hostId, false);
+        } else if ("APPROVED".equals(statusUpper)) {
+            // ดึงเฉพาะ Approved (isActive = true)
+            locations = locationRepository.findByOwnerIdAndIsActiveOrderByCreatedAtDesc(hostId, true);
+        } else {
+            // ไม่ระบุ status หรือ status ไม่ตรง (เช่น PENDING)
+            // ให้ดึงทั้งหมดที่เป็นของ Host คนนี้
+            locations = locationRepository.findByOwnerIdOrderByCreatedAtDesc(hostId);
+        }
+
+        // 3. แปลง Entity -> DTO
+        return locations.stream()
+                .map(loc -> new HostLocationListItem(
+                        loc.getId(),
+                        loc.getName(),
+                        loc.getAddressText(),
+                        loc.getCoverImageUrl(),
+                        loc.isActive() ? "APPROVED" : "DRAFT" // แปลง boolean เป็น String
+                ))
+                .toList();
+    }
+
+    /**
+     * (เมธอดใหม่) ดึงรายละเอียดสถานที่ของ Host (เฉพาะเจ้าของ)
+     */
+    @Transactional(readOnly = true)
+    public HostLocationDetailResponse getMyLocationDetail(String authorizationHeader, UUID locationId) {
+        // 1. ยืนยันตัวตนว่าเป็น HOST
+        MeResponse hostProfile = getHostProfile(authorizationHeader);
+        Integer hostId = hostProfile.getId();
+
+        // 2. ค้นหาสถานที่
+        Location loc = locationRepository.findById(locationId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบสถานที่")); // 404
+
+        // 3. ⭐️ ตรวจสอบสิทธิ์เจ้าของ
+        if (!loc.getOwner().getId().equals(hostId)) {
+            // ถ้า ID เจ้าของไม่ตรงกับ ID ของ Host ที่ล็อกอิน
+            throw new ForbiddenException("คุณไม่ใช่เจ้าของสถานที่นี้"); // 403
+        }
+
+        // 4. ค้นหา Units ที่อยู่ภายใต้ Location นี้
+        List<LocationUnit> units = locationUnitRepository.findByLocation_IdOrderByCodeAsc(locationId);
+        List<HostLocationDetailResponse.UnitItem> unitItems = units.stream()
+                .map(u -> new HostLocationDetailResponse.UnitItem(
+                        u.getId(), u.getCode(), u.getName(),
+                        u.getImageUrl(), u.getShortDesc(),
+                        u.getCapacity(), u.getPriceHourly(), u.isActive()
+                ))
+                .toList();
+
+        // 5. แปลงสถานะ (Status Logic)
+        String publishStatus;
+        if (loc.isActive()) {
+            publishStatus = "APPROVED";
+        } else if (loc.getRejectReason() != null && !loc.getRejectReason().isBlank()) {
+            publishStatus = "REJECTED";
+        } else {
+            publishStatus = "DRAFT";
+        }
+
+        // 6. ประกอบร่าง DTO ตอบกลับ
+        return new HostLocationDetailResponse(
+                loc.getId(),
+                loc.getName(),
+                loc.getDescription(),
+                loc.getAddressText(),
+                loc.getGeoLat(),
+                loc.getGeoLng(),
+                loc.getCoverImageUrl(),
+                loc.getCreatedAt(),
+                publishStatus,
+                loc.getRejectReason(), // ถ้าเป็น null, DTO จะตัดออกเอง
+                loc.isActive(),
+                unitItems
+        );
     }
 }
