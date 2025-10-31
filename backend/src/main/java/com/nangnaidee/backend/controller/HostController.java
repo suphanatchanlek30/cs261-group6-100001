@@ -2,14 +2,15 @@
 
 package com.nangnaidee.backend.controller;
 
+import com.nangnaidee.backend.dto.CreateDraftLocationResponse; // (เพิ่ม)
+import com.nangnaidee.backend.dto.CreateLocationRequest;       // (เพิ่ม)
 import com.nangnaidee.backend.dto.MeResponse;
 import com.nangnaidee.backend.service.HostService;
+import jakarta.validation.Valid; // (เพิ่ม)
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus; // (เพิ่ม)
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*; // (อัปเดต)
 
 @RestController
 @RequestMapping("/api/hosts")
@@ -27,5 +28,18 @@ public class HostController {
     ) {
         MeResponse response = hostService.getHostProfile(authorization);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * (Endpoint ใหม่) สร้าง Location ฉบับร่าง (DRAFT)
+     */
+    @PostMapping("/locations")
+    public ResponseEntity<CreateDraftLocationResponse> createDraftLocation(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @Valid @RequestBody CreateLocationRequest request
+    ) {
+        CreateDraftLocationResponse response = hostService.createDraftLocation(authorization, request);
+        // คืนค่า 201 Created
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
