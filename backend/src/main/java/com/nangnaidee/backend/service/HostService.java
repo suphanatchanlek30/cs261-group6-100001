@@ -3,31 +3,26 @@
 package com.nangnaidee.backend.service;
 
 import com.nangnaidee.backend.config.JwtTokenProvider;
-import com.nangnaidee.backend.dto.CreateDraftLocationResponse; // (เพิ่ม)
-import com.nangnaidee.backend.dto.CreateLocationRequest;   // (เพิ่ม)
-import com.nangnaidee.backend.dto.MeResponse;
+import com.nangnaidee.backend.dto.*;
 import com.nangnaidee.backend.exception.ForbiddenException;
+import com.nangnaidee.backend.exception.NotFoundException;
 import com.nangnaidee.backend.exception.UnauthorizedException;
-import com.nangnaidee.backend.model.Location; // (เพิ่ม)
+import com.nangnaidee.backend.exception.UnprocessableEntityException;
+import com.nangnaidee.backend.model.Location;
+import com.nangnaidee.backend.model.LocationUnit;
 import com.nangnaidee.backend.model.Role;
 import com.nangnaidee.backend.model.User;
-import com.nangnaidee.backend.repo.LocationRepository; // (เพิ่ม)
+import com.nangnaidee.backend.repo.LocationRepository;
+import com.nangnaidee.backend.repo.LocationUnitRepository;
 import com.nangnaidee.backend.repo.UserRepository;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // (เพิ่ม)
-import com.nangnaidee.backend.dto.HostLocationListItem; // (เพิ่ม)
-import com.nangnaidee.backend.dto.HostLocationDetailResponse; // (เพิ่ม)
-import com.nangnaidee.backend.exception.NotFoundException; // (เพิ่ม)
-import com.nangnaidee.backend.model.LocationUnit; // (เพิ่ม)
-import com.nangnaidee.backend.repo.LocationUnitRepository; // (เพิ่ม)
-
-import java.util.List; // (เพิ่ม)
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
-import java.util.UUID; // (เพิ่ม)
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,149 +31,138 @@ public class HostService {
 
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
-    private final LocationRepository locationRepository; // (เพิ่ม)
-    private final LocationUnitRepository locationUnitRepository; // (เพิ่ม)
+    private final LocationRepository locationRepository;
+    private final LocationUnitRepository locationUnitRepository;
+
+    // ⭐️ ใช้ค่าคงที่พิเศษเพื่อระบุสถานะ "รอตรวจสอบ"
+    private static final String PENDING_REVIEW_MARKER = "__PENDING__";
 
     /**
-     * ดึงข้อมูลโปรไฟล์ /me ของ Host
-     * @param authorizationHeader "Bearer <token>"
-     * @return MeResponse
-     * @throws UnauthorizedException (401) หาก Token ไม่มี, ผิดรูปแบบ หรือหมดอายุ
-     * @throws ForbiddenException (403) หาก Token ถูกต้อง แต่ไม่ใช่ Role "HOST"
+     * Helper กลางสำหรับแปลง Entity เป็น Status String
      */
-    public MeResponse getHostProfile(String authorizationHeader) {
-        // 1. ตรวจสอบ Authn (เหมือน AuthService.me)
+    private String getPublishStatus(Location loc) {
+        if (loc.isActive()) {
+            return "APPROVED"; // 1. อนุมัติแล้ว (isActive = true)
+        }
+
+        String reason = loc.getRejectReason();
+        if (reason == null) {
+            return "DRAFT"; // 2. ร่าง (isActive = false, reason = null)
+        }
+        if (PENDING_REVIEW_MARKER.equals(reason)) {
+            return "PENDING_REVIEW"; // 3. รอตวรจสอบ (isActive = false, reason = "__PENDING__")
+        }
+
+        return "REJECTED"; // 4. ถูกปฏิเสธ (isActive = false, reason = "มีข้อความ")
+    }
+
+    /**
+     * Helper ยืนยันตัวตน Host (ใช้ภายใน Service นี้)
+     */
+    private User getAuthenticatedHost(String authorizationHeader) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
         }
         String token = authorizationHeader.substring("Bearer ".length()).trim();
-
         Integer userId;
         try {
             userId = jwtTokenProvider.getUserId(token);
         } catch (JwtException | IllegalArgumentException e) {
             throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
         }
-
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้ (Token อาจถูกเพิกถอน)"));
-
-        // 2. ตรวจสอบ Authz (จุดที่ต่างจาก AuthService.me)
+                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
         Set<String> roleCodes = user.getRoles().stream()
                 .map(Role::getCode)
                 .collect(Collectors.toSet());
-
         if (!roleCodes.contains("HOST")) {
-            // ถ้าล็อกอินมา แต่ไม่ใช่ HOST -> 403 Forbidden
             throw new ForbiddenException("ต้องเป็นผู้ใช้ที่มีสิทธิ์ HOST เท่านั้น");
         }
+        return user;
+    }
 
-        // 3. ถ้าเป็น HOST จริง ให้คืนข้อมูลโปรไฟล์ (เหมือน AuthService.me)
-        List<String> rolesList = roleCodes.stream().toList();
+    /**
+     * (1/6) ดึงข้อมูลโปรไฟล์ /me ของ Host
+     */
+    public MeResponse getHostProfile(String authorizationHeader) {
+        User host = getAuthenticatedHost(authorizationHeader);
+        List<String> rolesList = host.getRoles().stream()
+                .map(Role::getCode)
+                .toList();
 
         return new MeResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getFullName(),
+                host.getId(),
+                host.getEmail(),
+                host.getFullName(),
                 rolesList
         );
     }
 
     /**
-     * (เมธอดใหม่) สร้าง Location ฉบับร่าง (DRAFT) สำหรับ HOST
-     * @param authorizationHeader "Bearer <token>"
-     * @param request ข้อมูล Location ที่ต้องการสร้าง
-     * @return CreateDraftLocationResponse
+     * (2/6) สร้าง Location ฉบับร่าง (DRAFT) สำหรับ HOST
      */
-    @Transactional // (เพิ่ม)
+    @Transactional
     public CreateDraftLocationResponse createDraftLocation(String authorizationHeader, CreateLocationRequest request) {
-        // 1. ตรวจสอบ Authn และ Authz (ต้องเป็น HOST เท่านั้น)
-        // เราสามารถเรียกใช้เมธอดเดิมเพื่อยืนยันตัวตนและสิทธิ์ได้
-        MeResponse hostProfile = getHostProfile(authorizationHeader);
-        User hostOwner = userRepository.findById(hostProfile.getId()).get(); // ดึง User entity ของ Host
+        User hostOwner = getAuthenticatedHost(authorizationHeader);
 
-        // 2. สร้าง Location Entity
         Location loc = new Location();
         loc.setId(UUID.randomUUID());
-        loc.setOwner(hostOwner); // เจ้าของคือ HOST ที่ล็อกอินเข้ามา
+        loc.setOwner(hostOwner);
         loc.setName(request.getName());
         loc.setDescription(request.getDescription());
         loc.setAddressText(request.getAddress());
         loc.setGeoLat(request.getGeoLat());
         loc.setGeoLng(request.getGeoLng());
         loc.setCoverImageUrl(request.getCoverImageUrl());
+        loc.setActive(false); // DRAFT เริ่มที่ false
+        // rejectReason เป็น null โดยอัตโนมัติ (สถานะ DRAFT)
 
-        // 3. ⭐️ จุดสำคัญ: ตั้งค่าเป็น DRAFT (ไม่ Active)
-        // เราจะใช้ field `is_active` เป็นตัวกำหนด
-        // DRAFT = false, PUBLISHED = true
-        loc.setActive(false);
-
-        // 4. บันทึกและคืนค่า Response DTO ใหม่
         Location saved = locationRepository.save(loc);
 
         return new CreateDraftLocationResponse(saved.getId(), "DRAFT");
     }
 
     /**
-     * (เมธอดใหม่) ดึงรายการสถานที่ของ Host ที่ล็อกอินอยู่
-     * @param authorizationHeader "Bearer <token>"
-     * @param status (Optional) "DRAFT" หรือ "APPROVED"
-     * @return List<HostLocationListItem>
+     * (3/6) ดึงรายการสถานที่ของ Host (My Locations)
      */
     @Transactional(readOnly = true)
     public List<HostLocationListItem> getMyLocations(String authorizationHeader, String status) {
-        // 1. ยืนยันตัวตนว่าเป็น HOST
-        MeResponse hostProfile = getHostProfile(authorizationHeader);
-        Integer hostId = hostProfile.getId();
+        User host = getAuthenticatedHost(authorizationHeader);
+        Integer hostId = host.getId();
 
-        // 2. ดึงข้อมูล Location จากฐานข้อมูล
-        List<Location> locations;
+        List<Location> locations = locationRepository.findByOwnerIdOrderByCreatedAtDesc(hostId);
         String statusUpper = (status == null) ? null : status.trim().toUpperCase();
 
-        if ("DRAFT".equals(statusUpper)) {
-            // ดึงเฉพาะ Draft (isActive = false)
-            locations = locationRepository.findByOwnerIdAndIsActiveOrderByCreatedAtDesc(hostId, false);
-        } else if ("APPROVED".equals(statusUpper)) {
-            // ดึงเฉพาะ Approved (isActive = true)
-            locations = locationRepository.findByOwnerIdAndIsActiveOrderByCreatedAtDesc(hostId, true);
-        } else {
-            // ไม่ระบุ status หรือ status ไม่ตรง (เช่น PENDING)
-            // ให้ดึงทั้งหมดที่เป็นของ Host คนนี้
-            locations = locationRepository.findByOwnerIdOrderByCreatedAtDesc(hostId);
-        }
-
-        // 3. แปลง Entity -> DTO
         return locations.stream()
                 .map(loc -> new HostLocationListItem(
                         loc.getId(),
                         loc.getName(),
                         loc.getAddressText(),
                         loc.getCoverImageUrl(),
-                        loc.isActive() ? "APPROVED" : "DRAFT" // แปลง boolean เป็น String
+                        getPublishStatus(loc) // 👈 ใช้ Helper ใหม่
                 ))
+                .filter(item -> { // กรองด้วย status ที่แปลงแล้ว
+                    if (statusUpper == null || statusUpper.isBlank()) {
+                        return true; // ไม่กรอง
+                    }
+                    return item.getStatus().equals(statusUpper);
+                })
                 .toList();
     }
 
     /**
-     * (เมธอดใหม่) ดึงรายละเอียดสถานที่ของ Host (เฉพาะเจ้าของ)
+     * (4/6) ดึงรายละเอียดสถานที่ของ Host (เฉพาะเจ้าของ)
      */
     @Transactional(readOnly = true)
     public HostLocationDetailResponse getMyLocationDetail(String authorizationHeader, UUID locationId) {
-        // 1. ยืนยันตัวตนว่าเป็น HOST
-        MeResponse hostProfile = getHostProfile(authorizationHeader);
-        Integer hostId = hostProfile.getId();
-
-        // 2. ค้นหาสถานที่
+        User host = getAuthenticatedHost(authorizationHeader);
         Location loc = locationRepository.findById(locationId)
                 .orElseThrow(() -> new NotFoundException("ไม่พบสถานที่")); // 404
 
-        // 3. ⭐️ ตรวจสอบสิทธิ์เจ้าของ
-        if (!loc.getOwner().getId().equals(hostId)) {
-            // ถ้า ID เจ้าของไม่ตรงกับ ID ของ Host ที่ล็อกอิน
+        if (!loc.getOwner().getId().equals(host.getId())) {
             throw new ForbiddenException("คุณไม่ใช่เจ้าของสถานที่นี้"); // 403
         }
 
-        // 4. ค้นหา Units ที่อยู่ภายใต้ Location นี้
         List<LocationUnit> units = locationUnitRepository.findByLocation_IdOrderByCodeAsc(locationId);
         List<HostLocationDetailResponse.UnitItem> unitItems = units.stream()
                 .map(u -> new HostLocationDetailResponse.UnitItem(
@@ -188,30 +172,100 @@ public class HostService {
                 ))
                 .toList();
 
-        // 5. แปลงสถานะ (Status Logic)
-        String publishStatus;
-        if (loc.isActive()) {
-            publishStatus = "APPROVED";
-        } else if (loc.getRejectReason() != null && !loc.getRejectReason().isBlank()) {
-            publishStatus = "REJECTED";
-        } else {
-            publishStatus = "DRAFT";
-        }
+        String publishStatus = getPublishStatus(loc); // 👈 ใช้ Helper ใหม่
 
-        // 6. ประกอบร่าง DTO ตอบกลับ
         return new HostLocationDetailResponse(
-                loc.getId(),
-                loc.getName(),
-                loc.getDescription(),
-                loc.getAddressText(),
-                loc.getGeoLat(),
-                loc.getGeoLng(),
-                loc.getCoverImageUrl(),
-                loc.getCreatedAt(),
+                loc.getId(), loc.getName(), loc.getDescription(), loc.getAddressText(),
+                loc.getGeoLat(), loc.getGeoLng(), loc.getCoverImageUrl(), loc.getCreatedAt(),
                 publishStatus,
-                loc.getRejectReason(), // ถ้าเป็น null, DTO จะตัดออกเอง
+                "REJECTED".equals(publishStatus) ? loc.getRejectReason() : null, // 👈 แสดงเหตุผลเมื่อ Rejected เท่านั้น
                 loc.isActive(),
                 unitItems
         );
+    }
+
+    /**
+     * (5/6) แก้ไข Location ฉบับร่าง (DRAFT / REJECTED)
+     */
+    @Transactional
+    public HostLocationDetailResponse updateDraftLocation(String authorizationHeader, UUID locationId, UpdateLocationRequest request) {
+        User host = getAuthenticatedHost(authorizationHeader);
+        Location loc = locationRepository.findById(locationId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบสถานที่"));
+
+        if (!loc.getOwner().getId().equals(host.getId())) {
+            throw new ForbiddenException("คุณไม่ใช่เจ้าของสถานที่นี้");
+        }
+
+        String currentStatus = getPublishStatus(loc); // 👈 ใช้ Helper ใหม่
+
+        // ⭐️ ตรวจสอบ Logic 422
+        if ("APPROVED".equals(currentStatus)) {
+            throw new UnprocessableEntityException("ไม่สามารถแก้ไขสถานที่ที่ได้รับการอนุมัติ (APPROVED) แล้ว");
+        }
+        if ("PENDING_REVIEW".equals(currentStatus)) {
+            throw new UnprocessableEntityException("ไม่สามารถแก้ไขสถานที่ที่กำลังรอการตรวจสอบ (PENDING_REVIEW)");
+        }
+        // (อนุญาต DRAFT และ REJECTED)
+
+        boolean changed = false;
+        if (request.getName() != null) { loc.setName(request.getName()); changed = true; }
+        if (request.getDescription() != null) { loc.setDescription(request.getDescription()); changed = true; }
+        if (request.getAddress() != null) { loc.setAddressText(request.getAddress()); changed = true; }
+        if (request.getGeoLat() != null) { loc.setGeoLat(request.getGeoLat()); changed = true; }
+        if (request.getGeoLng() != null) { loc.setGeoLng(request.getGeoLng()); changed = true; }
+        if (request.getCoverImageUrl() != null) { loc.setCoverImageUrl(request.getCoverImageUrl()); changed = true; }
+
+        if (request.getIsActive() != null) {
+            throw new UnprocessableEntityException("กรุณาใช้ปุ่ม 'Submit for Review' (POST .../submit) เพื่อส่งเผยแพร่");
+        }
+
+        // ⭐️ ถ้าแก้ REJECTED มันจะกลับไปเป็น DRAFT
+        if ("REJECTED".equals(currentStatus) && changed) {
+            loc.setRejectReason(null); // ล้างเหตุผลทิ้ง
+        }
+
+        if (!changed) {
+            throw new UnprocessableEntityException("ไม่พบข้อมูลที่ต้องการอัปเดต");
+        }
+
+        locationRepository.save(loc);
+
+        // คืนค่าที่อัปเดตแล้ว (สถานะจะกลายเป็น DRAFT ถ้าเคย REJECTED)
+        return getMyLocationDetail(authorizationHeader, locationId);
+    }
+
+    /**
+     * (6/6) ส่ง DRAFT/REJECTED location เพื่อ Review
+     */
+    @Transactional
+    public SubmitReviewResponse submitForReview(String authorizationHeader, UUID locationId) {
+        User host = getAuthenticatedHost(authorizationHeader);
+        Location loc = locationRepository.findById(locationId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบสถานที่")); // 404
+
+        if (!loc.getOwner().getId().equals(host.getId())) {
+            throw new ForbiddenException("คุณไม่ใช่เจ้าของสถานที่นี้"); // 403
+        }
+
+        String currentStatus = getPublishStatus(loc);
+
+        switch (currentStatus) {
+            case "APPROVED":
+                throw new UnprocessableEntityException("สถานที่นี้ได้รับการอนุมัติแล้ว");
+            case "PENDING_REVIEW":
+                throw new UnprocessableEntityException("สถานที่นี้กำลังรอการตรวจสอบอยู่แล้ว");
+
+            case "DRAFT":
+            case "REJECTED":
+                // นี่คือสถานะที่ถูกต้อง
+                loc.setActive(false);
+                loc.setRejectReason(PENDING_REVIEW_MARKER); // 👈 ตั้งค่าสถานะเป็น PENDING
+                locationRepository.save(loc);
+                return new SubmitReviewResponse("PENDING_REVIEW");
+
+            default:
+                throw new IllegalStateException("พบสถานะที่ไม่รู้จัก: " + currentStatus);
+        }
     }
 }

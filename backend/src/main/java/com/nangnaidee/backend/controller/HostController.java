@@ -2,21 +2,23 @@
 
 package com.nangnaidee.backend.controller;
 
-import com.nangnaidee.backend.dto.CreateDraftLocationResponse; // (เพิ่ม)
-import com.nangnaidee.backend.dto.CreateLocationRequest;       // (เพิ่ม)
+import com.nangnaidee.backend.dto.CreateDraftLocationResponse;
+import com.nangnaidee.backend.dto.CreateLocationRequest;
 import com.nangnaidee.backend.dto.MeResponse;
 import com.nangnaidee.backend.service.HostService;
-import jakarta.validation.Valid; // (เพิ่ม)
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus; // (เพิ่ม)
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*; // (อัปเดต)
-import com.nangnaidee.backend.dto.HostLocationListItem; // (เพิ่ม)
-import com.nangnaidee.backend.dto.HostLocationDetailResponse; // (เพิ่ม)
-import org.springframework.web.bind.annotation.PathVariable; // (เพิ่ม)
+import org.springframework.web.bind.annotation.*;
+import com.nangnaidee.backend.dto.HostLocationListItem;
+import com.nangnaidee.backend.dto.HostLocationDetailResponse;
+import org.springframework.web.bind.annotation.PathVariable;
+import com.nangnaidee.backend.dto.UpdateLocationRequest;
+import com.nangnaidee.backend.dto.SubmitReviewResponse; // (เพิ่ม)
 
-import java.util.List; // (เพิ่ม)
-import java.util.UUID; // (เพิ่ม)
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/hosts")
@@ -26,7 +28,7 @@ public class HostController {
     private final HostService hostService;
 
     /**
-     * ดึงโปรไฟล์ของ Host ที่ล็อกอินอยู่ (สำหรับ Onboarding)
+     * (1/6) ดึงโปรไฟล์ของ Host
      */
     @GetMapping("/me")
     public ResponseEntity<MeResponse> getHostProfile(
@@ -37,7 +39,7 @@ public class HostController {
     }
 
     /**
-     * (Endpoint ใหม่) สร้าง Location ฉบับร่าง (DRAFT)
+     * (2/6) สร้าง Location ฉบับร่าง (DRAFT)
      */
     @PostMapping("/locations")
     public ResponseEntity<CreateDraftLocationResponse> createDraftLocation(
@@ -45,12 +47,11 @@ public class HostController {
             @Valid @RequestBody CreateLocationRequest request
     ) {
         CreateDraftLocationResponse response = hostService.createDraftLocation(authorization, request);
-        // คืนค่า 201 Created
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
-     * (Endpoint ใหม่) ดึงรายการสถานที่ของ Host (My Locations)
+     * (3/6) ดึงรายการสถานที่ของ Host (My Locations)
      */
     @GetMapping("/locations")
     public ResponseEntity<List<HostLocationListItem>> getMyLocations(
@@ -62,7 +63,7 @@ public class HostController {
     }
 
     /**
-     * (Endpoint ใหม่) ดึงรายละเอียดสถานที่ของ Host (เฉพาะเจ้าของ)
+     * (4/6) ดึงรายละเอียดสถานที่ของ Host (เฉพาะเจ้าของ)
      */
     @GetMapping("/locations/{id}")
     public ResponseEntity<HostLocationDetailResponse> getMyLocationDetail(
@@ -70,6 +71,31 @@ public class HostController {
             @PathVariable("id") UUID id
     ) {
         HostLocationDetailResponse response = hostService.getMyLocationDetail(authorization, id);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * (5/6) Host แก้ไข Draft/Rejected Location
+     */
+    @PatchMapping("/locations/{id}")
+    public ResponseEntity<HostLocationDetailResponse> updateDraftLocation(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody UpdateLocationRequest request
+    ) {
+        HostLocationDetailResponse response = hostService.updateDraftLocation(authorization, id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * (6/6) Host ส่ง Draft/Rejected Location เพื่อขออนุมัติ
+     */
+    @PostMapping("/locations/{id}/submit")
+    public ResponseEntity<SubmitReviewResponse> submitForReview(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("id") UUID id
+    ) {
+        SubmitReviewResponse response = hostService.submitForReview(authorization, id);
         return ResponseEntity.ok(response);
     }
 }
