@@ -268,4 +268,51 @@ public class HostService {
                 throw new IllegalStateException("พบสถานะที่ไม่รู้จัก: " + currentStatus);
         }
     }
+
+    /**
+     * (7) เพิ่มยูนิตให้กับ Location ของ Host
+     */
+    @Transactional
+    public CreateHostUnitResponse createHostUnit(String authorizationHeader, UUID locationId, CreateHostUnitRequest request) {
+        User host = getAuthenticatedHost(authorizationHeader);
+        
+        // ตรวจสอบว่า location มีอยู่และเป็นของ host
+        Location location = locationRepository.findById(locationId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบสถานที่")); // 404
+
+        if (!location.getOwner().getId().equals(host.getId())) {
+            throw new ForbiddenException("คุณไม่ใช่เจ้าของสถานที่นี้"); // 403
+        }
+
+        // ตรวจสอบ code ซ้ำในสถานที่เดียวกัน
+        if (locationUnitRepository.existsByLocation_IdAndCodeIgnoreCase(locationId, request.getCode())) {
+            throw new UnprocessableEntityException("รหัสยูนิต '" + request.getCode() + "' มีอยู่แล้วในสถานที่นี้"); // 409 conflict
+        }
+
+        // สร้าง LocationUnit ใหม่
+        LocationUnit unit = new LocationUnit();
+        unit.setId(UUID.randomUUID());
+        unit.setLocation(location);
+        unit.setCode(request.getCode());
+        unit.setName(request.getName());
+        unit.setImageUrl(request.getImageUrl());
+        unit.setShortDesc(request.getShortDesc());
+        unit.setCapacity(request.getCapacity());
+        unit.setPriceHourly(request.getPriceHourly());
+        unit.setActive(true); // เริ่มต้นเป็น active
+
+        LocationUnit savedUnit = locationUnitRepository.save(unit);
+
+        // ตามความต้องการ publishStatus จะเป็น "INHERIT" เสมอ
+        // หมายความว่ายูนิตจะแสดงตาม status ของ location
+        return new CreateHostUnitResponse(savedUnit.getId(), "INHERIT");
+    }
+
+    //โค้คตัวนี้มีไว้สําหรับการสร้างหน่วยที่พัก (Host Unit) ใหม่ภายใต้สถานที่ที่ระบุ โดยตรวจสอบสิทธิ์ของผู้ใช้และความถูกต้องของข้อมูลก่อนที่จะสร้างยูนิตใหม่และตอบกลับด้วย ID และสถานะการเผยแพร่ของยูนิตนั้น
+    // 1. ยืนยันตัวตนของผู้ใช้และตรวจสอบว่าเป็นเจ้าของสถานที่
+    // 2. ตรวจว่ามีสถานที่นั้นจริงหรือไม่ LocationId
+    // 3. ตรวจสอบว่ารหัสยูนิต (code) ไม่ซ้ำกับยูนิตอื่นในสถานที่เดียวกัน
+    // 4. สร้าง LocationUnit ใหม่ด้วยข้อมูลจากคำขอ
+    // 5. บันทึกยูนิตลงในฐานข้อมูล
+    // 6. ส่งกลับ CreateHostUnitResponse ที่มี ID ของยูนิตและสถานะการเผยแพร่เป็น "INHERIT"
 }

@@ -2,20 +2,13 @@
 
 package com.nangnaidee.backend.controller;
 
-import com.nangnaidee.backend.dto.CreateDraftLocationResponse;
-import com.nangnaidee.backend.dto.CreateLocationRequest;
-import com.nangnaidee.backend.dto.MeResponse;
+import com.nangnaidee.backend.dto.*;
 import com.nangnaidee.backend.service.HostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.nangnaidee.backend.dto.HostLocationListItem;
-import com.nangnaidee.backend.dto.HostLocationDetailResponse;
-import org.springframework.web.bind.annotation.PathVariable;
-import com.nangnaidee.backend.dto.UpdateLocationRequest;
-import com.nangnaidee.backend.dto.SubmitReviewResponse; // (เพิ่ม)
 
 import java.util.List;
 import java.util.UUID;
@@ -98,4 +91,19 @@ public class HostController {
         SubmitReviewResponse response = hostService.submitForReview(authorization, id);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * (7) Host เพิ่มยูนิตให้กับสถานที่
+     */
+    @PostMapping("/locations/{locationId}/units")
+    public ResponseEntity<CreateHostUnitResponse> createHostUnit(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("locationId") UUID locationId,
+            @Valid @RequestBody CreateHostUnitRequest request
+    ) {
+        CreateHostUnitResponse response = hostService.createHostUnit(authorization, locationId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    //โค้ดตัวนี้จะทํางานได้ก็ต่อเมื่อเรามีการสร้างห้องแล้วนํา locationId มาใช้ และ Authorization ต้องถูกต้อง
 }
