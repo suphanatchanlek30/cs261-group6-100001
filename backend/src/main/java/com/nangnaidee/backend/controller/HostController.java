@@ -94,6 +94,7 @@ public class HostController {
 
     /**
      * (7) Host เพิ่มยูนิตให้กับสถานที่
+     * โค้ดตัวนี้จะทํางานได้ก็ต่อเมื่อเรามีการสร้างห้องแล้วนํา locationId มาใช้ และ Authorization ต้องถูกต้อง
      */
     @PostMapping("/locations/{locationId}/units")
     public ResponseEntity<CreateHostUnitResponse> createHostUnit(
@@ -105,5 +106,18 @@ public class HostController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    //โค้ดตัวนี้จะทํางานได้ก็ต่อเมื่อเรามีการสร้างห้องแล้วนํา locationId มาใช้ และ Authorization ต้องถูกต้อง
+    /**
+     * (8) Host แก้ไขยูนิตของตัวเอง 
+     * โค้ดนี้ข้อแค่ Host ตรงกับเจ้าของยูนิตเท่านั้นถึงจะแก้ไขได้เท่านั้นก็ได้เลย
+     */
+    @PatchMapping("/units/{id}")
+    public ResponseEntity<UpdateHostUnitResponse> updateHostUnit(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody UpdateHostUnitRequest request
+    ) {
+        UpdateHostUnitResponse response = hostService.updateHostUnit(authorization, id, request);
+        return ResponseEntity.ok(response);
+    }
+
 }
