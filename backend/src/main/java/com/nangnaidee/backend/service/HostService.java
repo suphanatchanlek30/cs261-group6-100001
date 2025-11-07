@@ -6,6 +6,8 @@ import com.nangnaidee.backend.exception.BadRequestException;
 import com.nangnaidee.backend.exception.ForbiddenException;
 import com.nangnaidee.backend.exception.NotFoundException;
 import com.nangnaidee.backend.exception.UnauthorizedException;
+
+import java.math.BigDecimal;
 import com.nangnaidee.backend.model.Booking;
 import com.nangnaidee.backend.model.Location;
 import com.nangnaidee.backend.model.LocationUnit;
@@ -16,6 +18,7 @@ import com.nangnaidee.backend.repo.BookingRepository;
 import com.nangnaidee.backend.repo.HostRevenueSummaryRepository;
 import com.nangnaidee.backend.repo.LocationRepository;
 import com.nangnaidee.backend.repo.LocationUnitRepository;
+import com.nangnaidee.backend.repo.RevenueTransactionRepository;
 import com.nangnaidee.backend.repo.UserRepository;
 
 import io.jsonwebtoken.JwtException;
@@ -44,6 +47,85 @@ public class HostService {
     private final JwtTokenProvider jwtTokenProvider;
     private final BookingRepository bookingRepository;
     private final HostRevenueSummaryRepository hostRevenueSummaryRepository;
+    private final RevenueTransactionRepository revenueTransactionRepository;
+
+    public Page<RevenueTransactionDto> getRevenueTransactions(
+            String authorizationHeader,
+            LocalDateTime from,
+            LocalDateTime to,
+            String method,
+            UUID locationId,
+            int page,
+            int size) {
+
+        // 1) Authn: ต้องมี Bearer token
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+
+        Integer userId;
+        try {
+            userId = jwtTokenProvider.getUserId(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
+
+        // 2) Authz: ต้องมี role HOST เท่านั้น
+        Set<String> roleCodes = user.getRoles().stream()
+                .map(Role::getCode)
+                .collect(Collectors.toSet());
+        if (!roleCodes.contains("HOST")) {
+            throw new ForbiddenException("ต้องเป็น HOST เท่านั้น");
+        }
+
+        // 3) ตรวจสอบ locationId ถ้ามีการระบุมา
+        if (locationId != null) {
+            var location = locationRepository.findById(locationId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบสถานที่ที่ระบุ"));
+            
+            // ตรวจสอบว่าเป็นเจ้าของสถานที่จริง
+            if (!location.getOwner().getId().equals(userId)) {
+                throw new ForbiddenException("คุณไม่ใช่เจ้าของสถานที่นี้");
+            }
+        }
+
+        // 4) Query รายการ transactions (เฉพาะ APPROVED เท่านั้น)
+        Page<Object[]> results = revenueTransactionRepository.findRevenueTransactions(
+            userId,
+            locationId,
+            method,
+            from,
+            to,
+            PageRequest.of(page, size)
+        );
+
+        // 4) Convert to DTO
+        return results.map(row -> {
+            LocalDateTime approvedAt = null;
+            if (row[4] != null) {
+                if (row[4] instanceof java.sql.Timestamp ts) {
+                    approvedAt = ts.toLocalDateTime();
+                } else if (row[4] instanceof LocalDateTime ldt) {
+                    approvedAt = ldt;
+                } else {
+                    approvedAt = LocalDateTime.parse(row[4].toString());
+                }
+            }
+
+            return new RevenueTransactionDto(
+                toUuid(row[0]),          // bookingId
+                toUuid(row[1]),          // paymentId
+                (BigDecimal) row[2],     // amount
+                (String) row[3],         // method
+                approvedAt,              // approvedAt
+                (String) row[5]          // locationName
+            );
+        });
+    }
 
     public GetBookingHostResponse getBooking(String authorizationHeader, String bookingId) {
 

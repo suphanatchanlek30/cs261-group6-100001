@@ -3,6 +3,7 @@ package com.nangnaidee.backend.controller;
 import com.nangnaidee.backend.dto.GetAllBookingHostResponse;
 import com.nangnaidee.backend.dto.GetBookingHostResponse;
 import com.nangnaidee.backend.dto.HostRevenueSummaryResponse;
+import com.nangnaidee.backend.dto.RevenueTransactionDto;
 import com.nangnaidee.backend.service.HostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/host")
+@RequestMapping("/api/hosts")
 @RequiredArgsConstructor
 public class HostController {
 
@@ -64,5 +65,19 @@ public class HostController {
         
         return ResponseEntity.ok(hostService.getRevenueSummary(
             authorizationHeader, from, to, groupBy));
+    }
+
+    @GetMapping("/revenue/transactions")
+    public ResponseEntity<Page<RevenueTransactionDto>> getRevenueTransactions(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(required = false) String method,
+            @RequestParam(required = false) UUID locationId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        return ResponseEntity.ok(hostService.getRevenueTransactions(
+            authorizationHeader, from, to, method, locationId, page, size));
     }
 }
