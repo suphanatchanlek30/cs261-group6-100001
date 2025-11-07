@@ -12,6 +12,7 @@ import com.nangnaidee.backend.model.Payment;
 import com.nangnaidee.backend.model.Role;
 import com.nangnaidee.backend.model.User;
 import com.nangnaidee.backend.repo.PaymentRepository;
+import com.nangnaidee.backend.repo.LocationRepository;
 import com.nangnaidee.backend.repo.UserRepository;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class AdminService {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
+    private final LocationRepository locationRepository;
     private final BookingRepository bookingRepository;
 
     @Transactional
@@ -166,6 +168,57 @@ public class AdminService {
                 booking.getId(),
                 booking.getBookingCode()
         );
+    }
+
+    public java.util.List<com.nangnaidee.backend.dto.LocationListItem> getHostLocations(
+            String authorizationHeader,
+            Integer hostId,
+            int page,
+            int size
+    ) {
+        // 1) Authn
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new com.nangnaidee.backend.exception.UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+
+        Integer userId;
+        try {
+            userId = jwtTokenProvider.getUserId(token);
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            throw new com.nangnaidee.backend.exception.UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+
+        var admin = userRepository.findById(userId)
+                .orElseThrow(() -> new com.nangnaidee.backend.exception.UnauthorizedException("ไม่พบผู้ใช้"));
+
+        // 2) Authz: must be ADMIN
+        java.util.Set<String> roleCodes = admin.getRoles().stream().map(com.nangnaidee.backend.model.Role::getCode).collect(java.util.stream.Collectors.toSet());
+        if (!roleCodes.contains("ADMIN")) {
+            throw new com.nangnaidee.backend.exception.ForbiddenException("ต้องเป็น ADMIN เท่านั้น");
+        }
+
+        // 3) Check target host exists
+        var host = userRepository.findById(hostId)
+                .orElseThrow(() -> new com.nangnaidee.backend.exception.NotFoundException("ไม่พบ Host ที่ระบุ"));
+
+        // 4) Query locations
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<com.nangnaidee.backend.model.Location> locationsPage = locationRepository.findByOwner_Id(hostId, pageable);
+
+        // 5) Map to DTO
+        java.util.List<com.nangnaidee.backend.dto.LocationListItem> items = locationsPage.stream().map(l -> new com.nangnaidee.backend.dto.LocationListItem(
+                l.getId(),
+                l.getName(),
+                l.getAddressText(),
+                l.getGeoLat(),
+                l.getGeoLng(),
+                l.getCoverImageUrl(),
+                null, // distanceKm not applicable
+                l.isActive()
+        )).toList();
+
+        return items;
     }
 
     // helper สั้น ๆ สำหรับ code (ออปชัน)

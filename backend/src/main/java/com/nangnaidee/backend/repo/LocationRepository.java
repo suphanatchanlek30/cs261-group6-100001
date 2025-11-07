@@ -15,4 +15,7 @@ public interface LocationRepository extends JpaRepository<Location, UUID>, Locat
     Page<Location> findByNameContainingIgnoreCaseOrAddressTextContainingIgnoreCase(
             String name, String address, Pageable pageable
     );
+
+    // Find locations owned by a specific user (host)
+    Page<Location> findByOwner_Id(Integer ownerId, Pageable pageable);
 }
