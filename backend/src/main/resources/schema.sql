@@ -155,3 +155,19 @@ CREATE TABLE dbo.location_hours (
 
 CREATE INDEX IX_location_hours_location ON dbo.location_hours(location_id);
 CREATE INDEX IX_location_hours_day ON dbo.location_hours(location_id, day_of_week);
+
+-- LOCATION_BLOCKS
+-- ตัวนี้เราสร้าง Table อีกอันจะเอาไว้เก็บข้อมูลบล็อกของสถานที่ และอิงตาม Location ID แบบ Relationship กับตาราง Locations
+CREATE TABLE dbo.location_blocks (
+                                     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                     location_id UNIQUEIDENTIFIER NOT NULL
+                                         FOREIGN KEY REFERENCES dbo.locations(id) ON DELETE CASCADE,
+                                     start_time DATETIME2(0) NOT NULL,
+                                     end_time DATETIME2(0) NOT NULL,
+                                     reason NVARCHAR(500) NULL,
+                                     created_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+                                     CONSTRAINT CK_location_blocks_time CHECK (start_time < end_time)
+);
+
+CREATE INDEX IX_location_blocks_location ON dbo.location_blocks(location_id);
+CREATE INDEX IX_location_blocks_time ON dbo.location_blocks(location_id, start_time, end_time);

@@ -94,4 +94,17 @@ public class LocationController {
         SetLocationHoursResponse response = hostService.setLocationHours(authorization, id, request);
         return ResponseEntity.ok(response);
     }
+
+    // -------- POST /api/locations/{id}/calendar/blocks --------
+    //มีจุดประสงค์เพื่อสร้างบล็อกในปฏิทินของสถานที่เฉพาะเจาะจง ปิดกั้นหรือจองช่วงเวลาเฉพาะ
+    //เช่น การปิดสถานที่ในช่วงเวลาที่กำหนดเพื่อการบำรุงรักษาหรือกิจกรรมพิเศษ
+    @PostMapping("/{id}/calendar/blocks")
+    public ResponseEntity<CreateLocationBlockResponse> createLocationBlock(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody CreateLocationBlockRequest request
+    ) {
+        CreateLocationBlockResponse response = hostService.createLocationBlock(authorization, id, request);
+        return ResponseEntity.status(201).body(response);
+    }
 }
