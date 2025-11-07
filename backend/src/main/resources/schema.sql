@@ -139,3 +139,19 @@ ALTER TABLE dbo.locations
 -- LOCATION_UNITS
 ALTER TABLE dbo.location_units
     ADD image_public_id NVARCHAR(300) NULL;
+
+-- LOCATION_HOURS
+--เราทําการสร้างตาราง location_hours เพื่อเก็บข้อมูลชั่วโมงการทํางานของสถานที่ต่างๆ ตอนแรกมันไม่มีตารางนี้
+CREATE TABLE dbo.location_hours (
+                                    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                    location_id UNIQUEIDENTIFIER NOT NULL
+                                        FOREIGN KEY REFERENCES dbo.locations(id) ON DELETE CASCADE,
+                                    day_of_week NVARCHAR(10) NOT NULL,
+                                    start_time TIME NOT NULL,
+                                    end_time TIME NOT NULL,
+                                    CONSTRAINT CK_location_hours_day CHECK (day_of_week IN ('MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY')),
+                                    CONSTRAINT CK_location_hours_time CHECK (start_time < end_time)
+);
+
+CREATE INDEX IX_location_hours_location ON dbo.location_hours(location_id);
+CREATE INDEX IX_location_hours_day ON dbo.location_hours(location_id, day_of_week);
