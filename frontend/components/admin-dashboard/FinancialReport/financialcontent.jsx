@@ -2,9 +2,10 @@
 "use client";
 
 import { HiCalendarDays } from "react-icons/hi2";
-
+import { FaSackDollar } from "react-icons/fa6";
 export default function FinancialReportContent() {
     const totalBookings = 23;
+    const totalIncome = 3450;
 
     const StatCard = ({ icon, value, label }) => (
         <div className="flex flex-1 min-w-[220px] items-center gap-3 rounded-xl bg-white px-5 py-4 shadow-sm border border-slate-200 hover:shadow-md transition-all">
@@ -24,6 +25,11 @@ export default function FinancialReportContent() {
                 icon={<HiCalendarDays size={20} />}
                 value={totalBookings}
                 label="Total Bookings"
+            />
+            <StatCard
+                icon={<FaSackDollar size={20} />}
+                value={`฿${totalIncome.toLocaleString()}`}
+                label="Total Income"
             />
         </section>
     );
