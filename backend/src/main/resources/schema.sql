@@ -171,3 +171,19 @@ CREATE TABLE dbo.location_blocks (
 
 CREATE INDEX IX_location_blocks_location ON dbo.location_blocks(location_id);
 CREATE INDEX IX_location_blocks_time ON dbo.location_blocks(location_id, start_time, end_time);
+
+-- UNIT_BLOCKS
+-- ตัวนี้เราสร้าง Table อีกอันจะเอาไว้เก็บข้อมูลบล็อกของยูนิตภายในสถานที่นั้นๆ และอิงตาม Unit ID แบบ Relationship กับตาราง Location_Units
+CREATE TABLE dbo.unit_blocks (
+                                 id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                 unit_id UNIQUEIDENTIFIER NOT NULL
+                                     FOREIGN KEY REFERENCES dbo.location_units(id) ON DELETE CASCADE,
+                                 start_time DATETIME2(0) NOT NULL,
+                                 end_time DATETIME2(0) NOT NULL,
+                                 reason NVARCHAR(500) NULL,
+                                 created_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+                                 CONSTRAINT CK_unit_blocks_time CHECK (start_time < end_time)
+);
+
+CREATE INDEX IX_unit_blocks_unit ON dbo.unit_blocks(unit_id);
+CREATE INDEX IX_unit_blocks_time ON dbo.unit_blocks(unit_id, start_time, end_time);
