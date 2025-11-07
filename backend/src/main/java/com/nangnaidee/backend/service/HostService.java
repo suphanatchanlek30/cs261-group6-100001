@@ -12,15 +12,18 @@ import com.nangnaidee.backend.model.*;
 import com.nangnaidee.backend.repo.LocationRepository;
 import com.nangnaidee.backend.repo.LocationUnitRepository;
 import com.nangnaidee.backend.repo.LocationHoursRepository;
+import com.nangnaidee.backend.repo.LocationBlockRepository;
 import com.nangnaidee.backend.repo.UserRepository;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -33,6 +36,7 @@ public class HostService {
     private final LocationRepository locationRepository;
     private final LocationUnitRepository locationUnitRepository;
     private final LocationHoursRepository locationHoursRepository;
+    private final LocationBlockRepository locationBlockRepository;
 
     // ⭐️ ใช้ค่าคงที่พิเศษเพื่อระบุสถานะ "รอตรวจสอบ"
     private static final String PENDING_REVIEW_MARKER = "__PENDING__";
@@ -505,4 +509,81 @@ public class HostService {
     // 4. ตรวจสอบรูปแบบเวลาและตรรกะของเวลาเปิด-ปิด
     // 5. บันทึกชั่วโมงใหม่ลงในฐานข้อมูล
     // 6. ส่งกลับ SetLocationHoursResponse ที่มีข้อความยืนยันและชั่วโมงที่ตั้งค่าใหม่
+
+    /**
+     * (10) บล็อกช่วงเวลาของ Location
+     */
+    @Transactional
+    public CreateLocationBlockResponse createLocationBlock(String authorizationHeader, UUID locationId, CreateLocationBlockRequest request) {
+        User user = getAuthenticatedUser(authorizationHeader);
+        
+        // ตรวจสอบสิทธิ์ - ต้องเป็น HOST เจ้าของหรือ ADMIN
+        Location location = locationRepository.findById(locationId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบสถานที่")); // 404
+
+        Set<String> roles = user.getRoles().stream()
+                .map(Role::getCode)
+                .collect(Collectors.toSet());
+                
+        boolean isAdmin = roles.contains("ADMIN");
+        boolean isOwner = roles.contains("HOST") && location.getOwner().getId().equals(user.getId());
+        
+        if (!isAdmin && !isOwner) {
+            throw new ForbiddenException("คุณไม่มีสิทธิ์บล็อกช่วงเวลาของสถานที่นี้"); // 403
+        }
+
+        // Parse และ validate เวลา
+        LocalDateTime startTime = parseDateTime(request.getStart());
+        LocalDateTime endTime = parseDateTime(request.getEnd());
+        
+        // ตรวจสอบ logic เวลา
+        if (startTime.isAfter(endTime) || startTime.equals(endTime)) {
+            throw new UnprocessableEntityException("เวลาเริ่มต้องน้อยกว่าเวลาสิ้นสุด"); // 422
+        }
+        
+        if (startTime.isBefore(LocalDateTime.now())) {
+            throw new UnprocessableEntityException("ไม่สามารถบล็อกเวลาในอดีตได้"); // 422
+        }
+
+        // ตรวจสอบการทับซ้อนกับการบล็อกที่มีอยู่
+        List<LocationBlock> overlappingBlocks = locationBlockRepository.findOverlappingBlocks(
+                locationId, startTime, endTime);
+                
+        if (!overlappingBlocks.isEmpty()) {
+            throw new UnprocessableEntityException("ช่วงเวลาที่เลือกทับซ้อนกับการบล็อกที่มีอยู่แล้ว"); // 409 conflict
+        }
+
+        // สร้าง LocationBlock ใหม่
+        LocationBlock block = new LocationBlock();
+        block.setLocation(location);
+        block.setStartTime(startTime);
+        block.setEndTime(endTime);
+        block.setReason(request.getReason());
+
+        LocationBlock savedBlock = locationBlockRepository.save(block);
+
+        return new CreateLocationBlockResponse(savedBlock.getId());
+        // โค้ดตัวนี้มีไว้สําหรับการ สร้างบล็อกในปฏิทินของสถานที่เฉพาะเจาะจง โดยตรวจสอบสิทธิ์ของผู้ใช้และความถูกต้องของข้อมูลก่อนที่จะสร้างบล็อกใหม่และตอบกลับด้วย ID ของบล็อกนั้น
+        // 1. ยืนยันตัวตนของผู้ใช้และตรวจสอบว่าเป็นเจ้าของสถานที่หรือ ADMIN
+        // 2. ตรวจว่ามีสถานที่นั้นจริงหรือไม่ LocationId
+        // 3. แปลงและตรวจสอบรูปแบบของเวลาเริ่มต้นและสิ้นสุด
+        // 4. ตรวจสอบตรรกะของเวลา (เริ่มต้นต้องน้อยกว่าสิ้นสุด และไม่ใช่เวลาในอดีต)
+        // 5. ตรวจสอบว่าช่วงเวลาที่ต้องการบล็อกไม่ทับซ้อนกับบล็อกที่มีอยู่แล้ว
+        // 6. สร้าง LocationBlock ใหม่ด้วยข้อมูลจากคำขอ
+        // 7. บันทึกบล็อกลงในฐานข้อมูล
+        // 8. ส่งกลับ CreateLocationBlockResponse ที่มี ID ของบล็อกนั้น
+    }
+
+    /**
+     * Helper สำหรับ parse DateTime จาก String (รองรับ timezone)
+     */
+    private LocalDateTime parseDateTime(String dateTimeStr) {
+        try {
+            // รองรับรูปแบบ ISO 8601 เช่น "2024-12-25T14:30:00+07:00"
+            OffsetDateTime offsetDateTime = OffsetDateTime.parse(dateTimeStr);
+            return offsetDateTime.toLocalDateTime();
+        } catch (Exception e) {
+            throw new UnprocessableEntityException("รูปแบบวันเวลาไม่ถูกต้อง: " + dateTimeStr + " (ต้องเป็น ISO 8601 เช่น 2024-12-25T14:30:00+07:00)");
+        }
+    }
 }
