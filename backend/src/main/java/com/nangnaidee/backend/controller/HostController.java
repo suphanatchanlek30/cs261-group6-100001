@@ -2,6 +2,7 @@ package com.nangnaidee.backend.controller;
 
 import com.nangnaidee.backend.dto.GetAllBookingHostResponse;
 import com.nangnaidee.backend.dto.GetBookingHostResponse;
+import com.nangnaidee.backend.dto.HostRevenueSummaryResponse;
 import com.nangnaidee.backend.service.HostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -10,16 +11,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/host/bookings") // base path
+@RequestMapping("/api/host") // base path
 @RequiredArgsConstructor
 public class HostController {
 
     private final HostService hostService;
 
-    @GetMapping("/{bookingId}")
+    @GetMapping("/bookings/{bookingId}")
     public ResponseEntity<GetBookingHostResponse> getBooking(
             @RequestHeader(name = "Authorization") String authorizationHeader,
             @PathVariable String bookingId) {
@@ -27,7 +29,7 @@ public class HostController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("")
+    @GetMapping("/bookings")
     public ResponseEntity<Page<GetAllBookingHostResponse>> getAllBookings(
             @RequestHeader(name = "Authorization") String authorizationHeader,
             @RequestParam(required = false) String status,
@@ -51,5 +53,16 @@ public class HostController {
                 sort);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/revenue/summary")
+    public ResponseEntity<List<HostRevenueSummaryResponse>> getRevenueSummary(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(defaultValue = "day") String groupBy) {
+        
+        return ResponseEntity.ok(hostService.getRevenueSummary(
+            authorizationHeader, from, to, groupBy));
     }
 }

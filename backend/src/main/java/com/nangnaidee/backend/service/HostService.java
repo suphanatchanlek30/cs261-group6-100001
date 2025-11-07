@@ -13,6 +13,7 @@ import com.nangnaidee.backend.model.Role;
 import com.nangnaidee.backend.model.User;
 import com.nangnaidee.backend.repo.BookingOverviewRepository;
 import com.nangnaidee.backend.repo.BookingRepository;
+import com.nangnaidee.backend.repo.HostRevenueSummaryRepository;
 import com.nangnaidee.backend.repo.LocationRepository;
 import com.nangnaidee.backend.repo.LocationUnitRepository;
 import com.nangnaidee.backend.repo.UserRepository;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -41,6 +43,7 @@ public class HostService {
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final BookingRepository bookingRepository;
+    private final HostRevenueSummaryRepository hostRevenueSummaryRepository;
 
     public GetBookingHostResponse getBooking(String authorizationHeader, String bookingId) {
 
@@ -130,7 +133,7 @@ public class HostService {
         return java.util.UUID.fromString(o.toString());
     }
 
-    
+
     public Page<GetAllBookingHostResponse> getallBooking(
             String authorizationHeader,
             String status,
@@ -230,7 +233,64 @@ public class HostService {
         });
 
         return dtoPage;
+    }
 
+    public List<HostRevenueSummaryResponse> getRevenueSummary(
+            String authorizationHeader,
+            LocalDateTime from,
+            LocalDateTime to,
+            String groupBy) {
+
+        // 1) Authn: ต้องมี Bearer token
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+
+        Integer userId;
+        try {
+            userId = jwtTokenProvider.getUserId(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
+
+        // 2) Authz: ต้องมี role HOST เท่านั้น
+        Set<String> roleCodes = user.getRoles().stream()
+                .map(Role::getCode)
+                .collect(Collectors.toSet());
+        if (!roleCodes.contains("HOST")) {
+            throw new ForbiddenException("ต้องเป็น HOST เท่านั้น");
+        }
+
+        // 3) ตรวจสอบ parameters
+        if (from == null || to == null) {
+            throw new BadRequestException("ต้องระบุช่วงเวลา from และ to");
+        }
+        if (from.isAfter(to)) {
+            throw new BadRequestException("from ต้องมาก่อน to");
+        }
+
+        // 4) ตรวจสอบ groupBy
+        if (!"day".equals(groupBy)) {
+            throw new BadRequestException("groupBy ต้องเป็น 'day' เท่านั้น");
+        }
+
+        // 5) Query ข้อมูล
+        List<Object[]> results = hostRevenueSummaryRepository.findRevenueSummaryByDay(
+            userId, from, to
+        );
+
+        // 6) แปลงข้อมูล
+        return results.stream()
+            .map(row -> HostRevenueSummaryResponse.builder()
+                .date(((java.sql.Date) row[0]).toLocalDate().atStartOfDay())
+                .totalRevenue((BigDecimal) row[1])
+                .totalBookings(((Number) row[2]).intValue())
+                .build())
+            .collect(Collectors.toList());
     }
 
 }
