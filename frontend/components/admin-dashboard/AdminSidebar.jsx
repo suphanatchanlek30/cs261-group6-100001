@@ -5,6 +5,7 @@ import {
   FiUsers, FiMapPin, FiClipboard, FiStar, FiCreditCard,
   FiChevronLeft, FiChevronRight,
 } from "react-icons/fi";
+import { BsBarChartLine } from "react-icons/bs";
 
 export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
   const items = [
@@ -13,6 +14,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
     { label: "Manage Booking", href: "/admin/bookings", icon: <FiClipboard /> },
     { label: "Manage Review", href: "/admin/reviews", icon: <FiStar /> },
     { label: "Payments", href: "/admin/payments", icon: <FiCreditCard /> },
+    { label: "Financial Report", href: "/admin/FinancialReport", icon: <BsBarChartLine /> },
   ];
 
   return (
