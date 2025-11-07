@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/host") // base path
+@RequestMapping("/api/host")
 @RequiredArgsConstructor
 public class HostController {
 
