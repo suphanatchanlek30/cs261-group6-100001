@@ -268,4 +268,137 @@ public class HostService {
                 throw new IllegalStateException("พบสถานะที่ไม่รู้จัก: " + currentStatus);
         }
     }
+
+    /**
+     * (7) เพิ่มยูนิตให้กับ Location ของ Host
+     */
+    @Transactional
+    public CreateHostUnitResponse createHostUnit(String authorizationHeader, UUID locationId, CreateHostUnitRequest request) {
+        User host = getAuthenticatedHost(authorizationHeader);
+        
+        // ตรวจสอบว่า location มีอยู่และเป็นของ host
+        Location location = locationRepository.findById(locationId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบสถานที่")); // 404
+
+        if (!location.getOwner().getId().equals(host.getId())) {
+            throw new ForbiddenException("คุณไม่ใช่เจ้าของสถานที่นี้"); // 403
+        }
+
+        // ตรวจสอบ code ซ้ำในสถานที่เดียวกัน
+        if (locationUnitRepository.existsByLocation_IdAndCodeIgnoreCase(locationId, request.getCode())) {
+            throw new UnprocessableEntityException("รหัสยูนิต '" + request.getCode() + "' มีอยู่แล้วในสถานที่นี้"); // 409 conflict
+        }
+
+        // สร้าง LocationUnit ใหม่
+        LocationUnit unit = new LocationUnit();
+        unit.setId(UUID.randomUUID());
+        unit.setLocation(location);
+        unit.setCode(request.getCode());
+        unit.setName(request.getName());
+        unit.setImageUrl(request.getImageUrl());
+        unit.setShortDesc(request.getShortDesc());
+        unit.setCapacity(request.getCapacity());
+        unit.setPriceHourly(request.getPriceHourly());
+        unit.setActive(true); // เริ่มต้นเป็น active
+
+        LocationUnit savedUnit = locationUnitRepository.save(unit);
+
+        // ตามความต้องการ publishStatus จะเป็น "INHERIT" เสมอ
+        // หมายความว่ายูนิตจะแสดงตาม status ของ location
+        return new CreateHostUnitResponse(savedUnit.getId(), "INHERIT");
+    }
+
+    //โค้คตัวนี้มีไว้สําหรับการสร้างหน่วยที่พัก (Host Unit) ใหม่ภายใต้สถานที่ที่ระบุ โดยตรวจสอบสิทธิ์ของผู้ใช้และความถูกต้องของข้อมูลก่อนที่จะสร้างยูนิตใหม่และตอบกลับด้วย ID และสถานะการเผยแพร่ของยูนิตนั้น
+    // 1. ยืนยันตัวตนของผู้ใช้และตรวจสอบว่าเป็นเจ้าของสถานที่
+    // 2. ตรวจว่ามีสถานที่นั้นจริงหรือไม่ LocationId
+    // 3. ตรวจสอบว่ารหัสยูนิต (code) ไม่ซ้ำกับยูนิตอื่นในสถานที่เดียวกัน
+    // 4. สร้าง LocationUnit ใหม่ด้วยข้อมูลจากคำขอ
+    // 5. บันทึกยูนิตลงในฐานข้อมูล
+    // 6. ส่งกลับ CreateHostUnitResponse ที่มี ID ของยูนิตและสถานะการเผยแพร่เป็น "INHERIT"
+
+    /**
+     * (8) แก้ไขยูนิตของ Host
+     */
+    @Transactional
+    public UpdateHostUnitResponse updateHostUnit(String authorizationHeader, UUID unitId, UpdateHostUnitRequest request) {
+        User host = getAuthenticatedHost(authorizationHeader);
+        
+        // ค้นหา unit และตรวจสอบสิทธิ์
+        LocationUnit unit = locationUnitRepository.findById(unitId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบยูนิต")); // 404
+
+        // ตรวจสอบว่า host เป็นเจ้าของ location ของ unit นี้
+        if (!unit.getLocation().getOwner().getId().equals(host.getId())) {
+            throw new ForbiddenException("คุณไม่ใช่เจ้าของยูนิตนี้"); // 403
+        }
+
+        boolean changed = false;
+        
+        // อัปเดตข้อมูลที่ส่งมา (partial update)
+        if (request.getCode() != null && !request.getCode().equals(unit.getCode())) {
+            // ตรวจสอบ code ซ้ำในสถานที่เดียวกัน (ไม่นับตัวเอง)
+            LocationUnit existingUnit = locationUnitRepository.findByLocation_IdAndCodeIgnoreCase(
+                    unit.getLocation().getId(), request.getCode());
+            if (existingUnit != null && !existingUnit.getId().equals(unitId)) {
+                throw new UnprocessableEntityException("รหัสยูนิต '" + request.getCode() + "' มีอยู่แล้วในสถานที่นี้");
+            }
+            unit.setCode(request.getCode());
+            changed = true;
+        }
+        
+        if (request.getName() != null) {
+            unit.setName(request.getName());
+            changed = true;
+        }
+        
+        if (request.getImageUrl() != null) {
+            unit.setImageUrl(request.getImageUrl());
+            changed = true;
+        }
+        
+        if (request.getShortDesc() != null) {
+            unit.setShortDesc(request.getShortDesc());
+            changed = true;
+        }
+        
+        if (request.getCapacity() != null) {
+            unit.setCapacity(request.getCapacity());
+            changed = true;
+        }
+        
+        if (request.getPriceHourly() != null) {
+            unit.setPriceHourly(request.getPriceHourly());
+            changed = true;
+        }
+        
+        if (request.getIsActive() != null) {
+            unit.setActive(request.getIsActive());
+            changed = true;
+        }
+
+        if (!changed) {
+            throw new UnprocessableEntityException("ไม่พบข้อมูลที่ต้องการอัปเดต");
+        }
+
+        LocationUnit savedUnit = locationUnitRepository.save(unit);
+
+        return new UpdateHostUnitResponse(
+                savedUnit.getId(),
+                savedUnit.getCode(),
+                savedUnit.getName(),
+                savedUnit.getImageUrl(),
+                savedUnit.getShortDesc(),
+                savedUnit.getCapacity(),
+                savedUnit.getPriceHourly(),
+                savedUnit.isActive(),
+                "INHERIT" // ยูนิตยังคงแสดงตาม location status
+        );
+    }
+    // โค้ดตัวนี้มีไว้สําหรับการ อัปเดตข้อมูลของหน่วยที่พัก (Host Unit) ที่มีอยู่แล้ว โดยตรวจสอบสิทธิ์ของผู้ใช้และความถูกต้องของข้อมูลก่อนที่จะทำการอัปเดตและตอบกลับด้วยข้อมูลที่อัปเดตของยูนิตนั้น
+    //1. ยืนยันตัวตนของผู้ใช้และตรวจสอบว่าเป็นเจ้าของยูนิต
+    //2. ค้นหา LocationUnit ที่จะอัปเดตโดยใช้ unitId
+    //3. อัปเดตข้อมูลของยูนิตตามข้อมูลที่ส่งมาในคำขอ (partial update)
+    //4. ตรวจสอบว่ารหัสยูนิต (code) ไม่ซ้ำกับยูนิตอื่นในสถานที่เดียวกัน (ไม่นับตัวเอง)
+    //5. บันทึกการเปลี่ยนแปลงลงในฐานข้อมูล
+    //6. ส่งกลับ UpdateHostUnitResponse ที่มีข้อมูลที่อัปเดตของยูนิต
 }
