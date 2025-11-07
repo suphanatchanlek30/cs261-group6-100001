@@ -8,21 +8,20 @@ import com.nangnaidee.backend.exception.ForbiddenException;
 import com.nangnaidee.backend.exception.NotFoundException;
 import com.nangnaidee.backend.exception.UnauthorizedException;
 import com.nangnaidee.backend.exception.UnprocessableEntityException;
-import com.nangnaidee.backend.model.Location;
-import com.nangnaidee.backend.model.LocationUnit;
-import com.nangnaidee.backend.model.Role;
-import com.nangnaidee.backend.model.User;
+import com.nangnaidee.backend.model.*;
 import com.nangnaidee.backend.repo.LocationRepository;
 import com.nangnaidee.backend.repo.LocationUnitRepository;
+import com.nangnaidee.backend.repo.LocationHoursRepository;
 import com.nangnaidee.backend.repo.UserRepository;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +32,7 @@ public class HostService {
     private final JwtTokenProvider jwtTokenProvider;
     private final LocationRepository locationRepository;
     private final LocationUnitRepository locationUnitRepository;
+    private final LocationHoursRepository locationHoursRepository;
 
     // ⭐️ ใช้ค่าคงที่พิเศษเพื่อระบุสถานะ "รอตรวจสอบ"
     private static final String PENDING_REVIEW_MARKER = "__PENDING__";
@@ -401,4 +401,108 @@ public class HostService {
     //4. ตรวจสอบว่ารหัสยูนิต (code) ไม่ซ้ำกับยูนิตอื่นในสถานที่เดียวกัน (ไม่นับตัวเอง)
     //5. บันทึกการเปลี่ยนแปลงลงในฐานข้อมูล
     //6. ส่งกลับ UpdateHostUnitResponse ที่มีข้อมูลที่อัปเดตของยูนิต
+
+    /**
+     * (9) กำหนดชั่วโมงเปิดบริการของ Location
+     */
+    @Transactional
+    public SetLocationHoursResponse setLocationHours(String authorizationHeader, UUID locationId, SetLocationHoursRequest request) {
+        User user = getAuthenticatedUser(authorizationHeader);
+        
+        // ตรวจสอบสิทธิ์ - ต้องเป็น HOST เจ้าของหรือ ADMIN
+        Location location = locationRepository.findById(locationId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบสถานที่")); // 404
+
+        Set<String> roles = user.getRoles().stream()
+                .map(Role::getCode)
+                .collect(Collectors.toSet());
+                
+        boolean isAdmin = roles.contains("ADMIN");
+        boolean isOwner = roles.contains("HOST") && location.getOwner().getId().equals(user.getId());
+        
+        if (!isAdmin && !isOwner) {
+            throw new ForbiddenException("คุณไม่มีสิทธิ์แก้ไขชั่วโมงเปิดบริการของสถานที่นี้"); // 403
+        }
+
+        // ลบชั่วโมงเปิดบริการเดิมทั้งหมด
+        locationHoursRepository.deleteByLocationId(locationId);
+
+        // เพิ่มชั่วโมงเปิดบริการใหม่
+        List<LocationHours> newHours = new ArrayList<>();
+        Map<String, List<TimeSlot>> allDays = request.getAllDays();
+        
+        for (Map.Entry<String, List<TimeSlot>> entry : allDays.entrySet()) {
+            String dayName = entry.getKey();
+            List<TimeSlot> timeSlots = entry.getValue();
+            
+            if (timeSlots != null && !timeSlots.isEmpty()) {
+                LocationHours.DayOfWeek dayOfWeek = LocationHours.DayOfWeek.fromShortName(dayName);
+                
+                for (TimeSlot slot : timeSlots) {
+                    // Validate time format และ logic
+                    LocalTime startTime = parseTime(slot.getStart());
+                    LocalTime endTime = parseTime(slot.getEnd());
+                    
+                    if (startTime.isAfter(endTime) || startTime.equals(endTime)) {
+                        throw new UnprocessableEntityException(
+                            String.format("เวลาเปิด (%s) ต้องน้อยกว่าเวลาปิด (%s) ในวัน %s", 
+                                slot.getStart(), slot.getEnd(), dayName));
+                    }
+                    
+                    LocationHours hours = new LocationHours();
+                    hours.setLocation(location);
+                    hours.setDayOfWeek(dayOfWeek);
+                    hours.setStartTime(startTime);
+                    hours.setEndTime(endTime);
+                    newHours.add(hours);
+                }
+            }
+        }
+
+        locationHoursRepository.saveAll(newHours);
+
+        // สร้าง response
+        Map<String, List<TimeSlot>> responseHours = new HashMap<>();
+        for (Map.Entry<String, List<TimeSlot>> entry : allDays.entrySet()) {
+            responseHours.put(entry.getKey(), entry.getValue() != null ? entry.getValue() : List.of());
+        }
+
+        return new SetLocationHoursResponse("กำหนดชั่วโมงเปิดบริการสำเร็จ", responseHours);
+    }
+
+    /**
+     * Helper สำหรับยืนยันตัวตนผู้ใช้ทั่วไป (ไม่เฉพาะ HOST)
+     */
+    private User getAuthenticatedUser(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+        Integer userId;
+        try {
+            userId = jwtTokenProvider.getUserId(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
+    }
+
+    /**
+     * Helper สำหรับ parse เวลาจาก String
+     */
+    private LocalTime parseTime(String timeStr) {
+        try {
+            return LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm"));
+        } catch (DateTimeParseException e) {
+            throw new UnprocessableEntityException("รูปแบบเวลาไม่ถูกต้อง: " + timeStr + " (ต้องเป็น HH:MM)");
+        }
+    }
+    // โค้ดตัวนี้มีไว้สําหรับการ กำหนดชั่วโมงเปิดบริการของสถานที่ (Location) โดยตรวจสอบสิทธิ์ของผู้ใช้และความถูกต้องของข้อมูลก่อนที่จะบันทึกชั่วโมงใหม่และตอบกลับด้วยข้อความยืนยันและชั่วโมงที่ตั้งค่าใหม่
+    // 1. ยืนยันตัวตนของผู้ใช้และตรวจสอบว่าเป็นเจ้าของสถานที่หรือ ADMIN
+    // 2. ลบชั่วโมงเปิดบริการเดิมทั้งหมดของสถานที่นั้น
+    // 3. เพิ่มชั่วโมงเปิดบริการใหม่ตามข้อมูลที่ส่งมาในคำข
+    // 4. ตรวจสอบรูปแบบเวลาและตรรกะของเวลาเปิด-ปิด
+    // 5. บันทึกชั่วโมงใหม่ลงในฐานข้อมูล
+    // 6. ส่งกลับ SetLocationHoursResponse ที่มีข้อความยืนยันและชั่วโมงที่ตั้งค่าใหม่
 }
