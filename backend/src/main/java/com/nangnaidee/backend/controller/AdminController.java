@@ -4,6 +4,7 @@ package com.nangnaidee.backend.controller;
 
 import com.nangnaidee.backend.dto.AdminLocationReviewRequest;
 import com.nangnaidee.backend.dto.AdminLocationReviewResponse;
+import com.nangnaidee.backend.dto.AdminUserListResponse;
 import com.nangnaidee.backend.dto.GetPaymentResponse;
 import com.nangnaidee.backend.dto.LocationReviewQueueResponse;
 import com.nangnaidee.backend.dto.PatchPaymentRequest;
@@ -52,6 +53,19 @@ public class AdminController {
             @Valid @RequestBody AdminLocationReviewRequest request
     ) {
         AdminLocationReviewResponse response = adminService.reviewLocation(authorizationHeader, id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<AdminUserListResponse> getUsers(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        AdminUserListResponse response = adminService.getUsers(authorizationHeader, q, role, status, page, size);
         return ResponseEntity.ok(response);
     }
 

@@ -5,6 +5,7 @@ package com.nangnaidee.backend.service;
 import com.nangnaidee.backend.config.JwtTokenProvider;
 import com.nangnaidee.backend.dto.AdminLocationReviewRequest;
 import com.nangnaidee.backend.dto.AdminLocationReviewResponse;
+import com.nangnaidee.backend.dto.AdminUserListResponse;
 import com.nangnaidee.backend.dto.GetPaymentItemDto;
 import com.nangnaidee.backend.dto.GetPaymentResponse;
 import com.nangnaidee.backend.dto.LocationReviewQueueResponse;
@@ -305,6 +306,99 @@ public class AdminService {
         }
 
         return "REJECTED";
+    }
+
+    @Transactional(readOnly = true)
+    public AdminUserListResponse getUsers(String authorizationHeader, String q, String role, String status, int page, int size) {
+        // 1) Authentication
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+
+        Integer userId;
+        try {
+            userId = jwtTokenProvider.getUserId(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+
+        User admin = userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
+
+        // 2) Authorization: ต้องเป็น ADMIN
+        Set<String> roleCodes = admin.getRoles().stream()
+                .map(Role::getCode)
+                .collect(Collectors.toSet());
+        if (!roleCodes.contains("ADMIN")) {
+            throw new ForbiddenException("ต้องเป็น ADMIN เท่านั้น");
+        }
+
+        // 3) Build query based on filters
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> usersPage;
+
+        boolean hasSearch = q != null && !q.trim().isEmpty();
+        boolean hasRole = role != null && !role.trim().isEmpty();
+        boolean hasStatus = status != null && !status.trim().isEmpty();
+
+        if (!hasSearch && !hasRole && !hasStatus) {
+            // No filters
+            usersPage = userRepository.findAllByOrderByCreatedAtDesc(pageable);
+        } else if (hasSearch && !hasRole && !hasStatus) {
+            // Search only
+            String searchTerm = q.trim();
+            usersPage = userRepository.findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrderByCreatedAtDesc(
+                    searchTerm, searchTerm, pageable);
+        } else if (!hasSearch && hasRole && !hasStatus) {
+            // Role only
+            usersPage = userRepository.findByRoleCode(role.trim(), pageable);
+        } else if (!hasSearch && !hasRole && hasStatus) {
+            // Status only
+            boolean isActive = "ACTIVE".equalsIgnoreCase(status.trim());
+            usersPage = userRepository.findByIsActiveOrderByCreatedAtDesc(isActive, pageable);
+        } else if (hasSearch && hasRole && !hasStatus) {
+            // Search + Role
+            usersPage = userRepository.findByRoleCodeAndSearch(role.trim(), q.trim(), pageable);
+        } else if (hasSearch && !hasRole && hasStatus) {
+            // Search + Status
+            boolean isActive = "ACTIVE".equalsIgnoreCase(status.trim());
+            String searchTerm = q.trim();
+            usersPage = userRepository.findByIsActiveAndFullNameContainingIgnoreCaseOrIsActiveAndEmailContainingIgnoreCaseOrderByCreatedAtDesc(
+                    isActive, searchTerm, isActive, searchTerm, pageable);
+        } else if (!hasSearch && hasRole && hasStatus) {
+            // Role + Status
+            boolean isActive = "ACTIVE".equalsIgnoreCase(status.trim());
+            usersPage = userRepository.findByRoleCodeAndIsActive(role.trim(), isActive, pageable);
+        } else {
+            // All three filters
+            boolean isActive = "ACTIVE".equalsIgnoreCase(status.trim());
+            usersPage = userRepository.findByRoleCodeAndIsActiveAndSearch(role.trim(), isActive, q.trim(), pageable);
+        }
+
+        // 4) Map to DTO
+        List<AdminUserListResponse.AdminUserItem> items = usersPage.stream()
+                .map(user -> new AdminUserListResponse.AdminUserItem(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getFullName(),
+                        null, // phoneNumber - not available in User model
+                        user.getRoles().stream()
+                                .map(Role::getCode)
+                                .collect(Collectors.toSet()),
+                        user.isActive(),
+                        user.getCreatedAt(),
+                        null // lastLoginAt - not available in User model
+                ))
+                .toList();
+
+        return new AdminUserListResponse(
+                items,
+                (int) usersPage.getTotalElements(),
+                usersPage.getTotalPages(),
+                usersPage.getNumber(),
+                usersPage.getSize()
+        );
     }
 
     // helper สั้น ๆ สำหรับ code (ออปชัน)
