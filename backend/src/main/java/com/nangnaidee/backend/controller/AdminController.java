@@ -2,11 +2,14 @@
 
 package com.nangnaidee.backend.controller;
 
+import com.nangnaidee.backend.dto.AdminLocationReviewRequest;
+import com.nangnaidee.backend.dto.AdminLocationReviewResponse;
 import com.nangnaidee.backend.dto.GetPaymentResponse;
 import com.nangnaidee.backend.dto.LocationReviewQueueResponse;
 import com.nangnaidee.backend.dto.PatchPaymentRequest;
 import com.nangnaidee.backend.dto.PatchPaymentResponse;
 import com.nangnaidee.backend.service.AdminService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +42,16 @@ public class AdminController {
             @RequestParam(defaultValue = "10") int size
     ) {
         LocationReviewQueueResponse response = adminService.getLocationReviews(authorizationHeader, q, hostId, page, size);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/locations/{id}/review")
+    public ResponseEntity<AdminLocationReviewResponse> reviewLocation(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody AdminLocationReviewRequest request
+    ) {
+        AdminLocationReviewResponse response = adminService.reviewLocation(authorizationHeader, id, request);
         return ResponseEntity.ok(response);
     }
 

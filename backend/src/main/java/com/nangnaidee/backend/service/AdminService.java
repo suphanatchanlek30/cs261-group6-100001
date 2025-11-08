@@ -3,6 +3,8 @@
 package com.nangnaidee.backend.service;
 
 import com.nangnaidee.backend.config.JwtTokenProvider;
+import com.nangnaidee.backend.dto.AdminLocationReviewRequest;
+import com.nangnaidee.backend.dto.AdminLocationReviewResponse;
 import com.nangnaidee.backend.dto.GetPaymentItemDto;
 import com.nangnaidee.backend.dto.GetPaymentResponse;
 import com.nangnaidee.backend.dto.LocationReviewQueueResponse;
@@ -231,6 +233,78 @@ public class AdminService {
                 locationsPage.getNumber(),
                 locationsPage.getSize()
         );
+    }
+
+    @Transactional
+    public AdminLocationReviewResponse reviewLocation(String authorizationHeader, UUID locationId, AdminLocationReviewRequest request) {
+        // 1) Authentication
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+
+        Integer userId;
+        try {
+            userId = jwtTokenProvider.getUserId(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+
+        User admin = userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
+
+        // 2) Authorization: ต้องเป็น ADMIN
+        Set<String> roleCodes = admin.getRoles().stream()
+                .map(Role::getCode)
+                .collect(Collectors.toSet());
+        if (!roleCodes.contains("ADMIN")) {
+            throw new ForbiddenException("ต้องเป็น ADMIN เท่านั้น");
+        }
+
+        // 3) Find location
+        com.nangnaidee.backend.model.Location location = locationRepository.findById(locationId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบสถานที่"));
+
+        // 4) Check current status - ต้องเป็น PENDING_REVIEW เท่านั้น
+        String currentStatus = getLocationStatus(location);
+        if (!"PENDING_REVIEW".equals(currentStatus)) {
+            throw new ConflictException("สถานที่นี้ไม่ได้อยู่ในสถานะรอการตรวจสอบ");
+        }
+
+        String requestStatus = request.getStatus().trim().toUpperCase();
+
+        // 5) Update location based on status
+        if ("APPROVED".equals(requestStatus)) {
+            location.setActive(true);
+            location.setRejectReason(null);
+        } else if ("REJECTED".equals(requestStatus)) {
+            location.setActive(false);
+            location.setRejectReason(request.getReason() != null ? request.getReason() : "ไม่ผ่านการตรวจสอบ");
+        }
+
+        locationRepository.save(location);
+
+        return new AdminLocationReviewResponse(
+                requestStatus,
+                "REJECTED".equals(requestStatus) ? location.getRejectReason() : null
+        );
+    }
+
+    // Helper method สำหรับดึง location status
+    private String getLocationStatus(com.nangnaidee.backend.model.Location loc) {
+        if (loc.isActive()) {
+            return "APPROVED";
+        }
+
+        String reason = loc.getRejectReason();
+        if (reason == null) {
+            return "DRAFT";
+        }
+        if ("__PENDING__".equals(reason)) {
+            return "PENDING_REVIEW";
+        }
+
+        return "REJECTED";
     }
 
     // helper สั้น ๆ สำหรับ code (ออปชัน)
