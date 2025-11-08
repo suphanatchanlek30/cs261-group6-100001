@@ -27,5 +27,16 @@ public interface LocationRepository extends JpaRepository<Location, UUID>, Locat
      */
     List<Location> findByOwnerIdAndIsActiveOrderByCreatedAtDesc(Integer ownerId, boolean isActive);
 
+    /**
+     * Admin Review Queue - ค้นหา locations ที่ PENDING_REVIEW (isActive = false + rejectReason = "__PENDING__")
+     */
+    Page<Location> findByIsActiveFalseAndRejectReason(String rejectReason, Pageable pageable);
+    
+    Page<Location> findByOwnerIdAndIsActiveFalseAndRejectReason(Integer ownerId, String rejectReason, Pageable pageable);
+    
+    Page<Location> findByNameContainingIgnoreCaseAndIsActiveFalseAndRejectReason(String name, String rejectReason, Pageable pageable);
+    
+    Page<Location> findByOwnerIdAndNameContainingIgnoreCaseAndIsActiveFalseAndRejectReason(Integer ownerId, String name, String rejectReason, Pageable pageable);
+
 
 }

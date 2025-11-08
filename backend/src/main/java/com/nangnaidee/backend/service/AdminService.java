@@ -5,12 +5,14 @@ package com.nangnaidee.backend.service;
 import com.nangnaidee.backend.config.JwtTokenProvider;
 import com.nangnaidee.backend.dto.GetPaymentItemDto;
 import com.nangnaidee.backend.dto.GetPaymentResponse;
+import com.nangnaidee.backend.dto.LocationReviewQueueResponse;
 import com.nangnaidee.backend.dto.PatchPaymentRequest;
 import com.nangnaidee.backend.dto.PatchPaymentResponse;
 import com.nangnaidee.backend.exception.*;
 import com.nangnaidee.backend.model.Payment;
 import com.nangnaidee.backend.model.Role;
 import com.nangnaidee.backend.model.User;
+import com.nangnaidee.backend.repo.LocationRepository;
 import com.nangnaidee.backend.repo.PaymentRepository;
 import com.nangnaidee.backend.repo.UserRepository;
 import io.jsonwebtoken.JwtException;
@@ -18,10 +20,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import com.nangnaidee.backend.repo.BookingRepository;
 
 
@@ -39,6 +39,7 @@ public class AdminService {
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
+    private final LocationRepository locationRepository;
 
     @Transactional
     public GetPaymentResponse getPayments(String authorizationHeader, String status, int page, int size) {
@@ -165,6 +166,70 @@ public class AdminService {
                 booking.getStatus(),
                 booking.getId(),
                 booking.getBookingCode()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public LocationReviewQueueResponse getLocationReviews(String authorizationHeader, String q, Integer hostId, int page, int size) {
+        // 1) Authentication
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+
+        Integer userId;
+        try {
+            userId = jwtTokenProvider.getUserId(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+
+        User admin = userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
+
+        // 2) Authorization: ต้องเป็น ADMIN
+        Set<String> roleCodes = admin.getRoles().stream()
+                .map(Role::getCode)
+                .collect(Collectors.toSet());
+        if (!roleCodes.contains("ADMIN")) {
+            throw new ForbiddenException("ต้องเป็น ADMIN เท่านั้น");
+        }
+
+        // 3) Query locations ที่ PENDING_REVIEW
+        Pageable pageable = PageRequest.of(page, size);
+        Page<com.nangnaidee.backend.model.Location> locationsPage;
+
+        // Filter by PENDING_REVIEW status (isActive = false + rejectReason = "__PENDING__")
+        if ((q == null || q.trim().isEmpty()) && hostId == null) {
+            // No filters - get all pending review locations
+            locationsPage = locationRepository.findByIsActiveFalseAndRejectReason("__PENDING__", pageable);
+        } else if (hostId != null && (q == null || q.trim().isEmpty())) {
+            // Filter by hostId only
+            locationsPage = locationRepository.findByOwnerIdAndIsActiveFalseAndRejectReason(hostId, "__PENDING__", pageable);
+        } else if (q != null && !q.trim().isEmpty() && hostId == null) {
+            // Filter by name search only
+            locationsPage = locationRepository.findByNameContainingIgnoreCaseAndIsActiveFalseAndRejectReason(q.trim(), "__PENDING__", pageable);
+        } else {
+            // Both filters
+            locationsPage = locationRepository.findByOwnerIdAndNameContainingIgnoreCaseAndIsActiveFalseAndRejectReason(hostId, q.trim(), "__PENDING__", pageable);
+        }
+
+        // 4) Map to DTO
+        List<LocationReviewQueueResponse.LocationReviewItem> items = locationsPage.stream()
+                .map(loc -> new LocationReviewQueueResponse.LocationReviewItem(
+                        loc.getId(),
+                        loc.getName(),
+                        loc.getOwner().getId(),
+                        loc.getCreatedAt() // ใช้ createdAt แทน submittedAt ตามที่ตกลงไว้
+                ))
+                .toList();
+
+        return new LocationReviewQueueResponse(
+                items,
+                (int) locationsPage.getTotalElements(),
+                locationsPage.getTotalPages(),
+                locationsPage.getNumber(),
+                locationsPage.getSize()
         );
     }
 
