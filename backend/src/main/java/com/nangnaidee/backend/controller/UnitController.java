@@ -2,13 +2,11 @@
 
 package com.nangnaidee.backend.controller;
 
-import com.nangnaidee.backend.dto.ApiMessageResponse;
-import com.nangnaidee.backend.dto.OccupiedSlotsResponse;
-import com.nangnaidee.backend.dto.UpdateUnitRequest;
-import com.nangnaidee.backend.dto.UpdateUnitResponse;
+import com.nangnaidee.backend.dto.*;
 import com.nangnaidee.backend.exception.BadRequestException;
 import com.nangnaidee.backend.service.LocationUnitService;
 import com.nangnaidee.backend.service.UnitAvailabilityService;
+import com.nangnaidee.backend.service.HostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +22,7 @@ public class UnitController {
 
     private final LocationUnitService locationUnitService;
     private final UnitAvailabilityService unitAvailabilityService;
+    private final HostService hostService;
 
     @PatchMapping("/{id}")
     public ResponseEntity<UpdateUnitResponse> updateUnit(
@@ -64,4 +63,17 @@ public class UnitController {
             throw new BadRequestException("รูปแบบเวลาต้องเป็น ISO-8601 เช่น 2025-10-10T00:00:00%2B07:00 หรือใช้ Z (UTC)");
         }
     }
+
+    // ---- POST /api/units/{unitId}/blocks ----
+    // เพิ่มบล็อกในปฏิทินของยูนิตที่พัก (Host Unit) เฉพาะเจาะจง
+    @PostMapping("/{unitId}/blocks")
+    public ResponseEntity<CreateUnitBlockResponse> createUnitBlock(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("unitId") UUID unitId,
+            @Valid @RequestBody CreateUnitBlockRequest request
+    ) {
+        CreateUnitBlockResponse response = hostService.createUnitBlock(authorization, unitId, request);
+        return ResponseEntity.status(201).body(response);
+    }
+
 }

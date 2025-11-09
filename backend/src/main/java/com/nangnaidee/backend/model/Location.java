@@ -56,6 +56,9 @@ public class Location {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "reject_reason", length = 500, columnDefinition = "NVARCHAR(500)")
+    private String rejectReason;
+
     // ✅ เผื่อกรณีไม่ได้เซ็ต id มาจาก service
     @PrePersist
     public void prePersist() {

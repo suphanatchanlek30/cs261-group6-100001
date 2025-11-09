@@ -3,16 +3,11 @@
 package com.nangnaidee.backend.controller;
 
 import com.nangnaidee.backend.dto.*;
-import com.nangnaidee.backend.service.LocationService;
-import com.nangnaidee.backend.service.LocationQueryService;
-import com.nangnaidee.backend.service.LocationUnitService;
+import com.nangnaidee.backend.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.nangnaidee.backend.dto.UpdateLocationRequest;
-import com.nangnaidee.backend.service.LocationUpdateService;
-import com.nangnaidee.backend.service.LocationDeleteService;
 
 import java.util.UUID;
 
@@ -26,6 +21,7 @@ public class LocationController {
     private final LocationUnitService locationUnitService;
     private final LocationUpdateService locationUpdateService;
     private final LocationDeleteService locationDeleteService;
+    private final HostService hostService;
 
     @PostMapping
     public ResponseEntity<CreateLocationResponse> create(
@@ -85,5 +81,30 @@ public class LocationController {
     ) {
         locationDeleteService.delete(authorization, id);
         return ResponseEntity.ok(new ApiMessageResponse("ลบสถานที่สำเร็จ"));
+    }
+
+    // -------- PUT /api/locations/{id}/hours --------
+    //ใช้ในการอัปเดตทรัพยากรบนเซิร์ฟเวอร์ โดยการตั้งค่าชั่วโมงการทำงานของสถานที่
+    @PutMapping("/{id}/hours")
+    public ResponseEntity<SetLocationHoursResponse> setLocationHours(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody SetLocationHoursRequest request
+    ) {
+        SetLocationHoursResponse response = hostService.setLocationHours(authorization, id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    // -------- POST /api/locations/{id}/calendar/blocks --------
+    //มีจุดประสงค์เพื่อสร้างบล็อกในปฏิทินของสถานที่เฉพาะเจาะจง ปิดกั้นหรือจองช่วงเวลาเฉพาะ
+    //เช่น การปิดสถานที่ในช่วงเวลาที่กำหนดเพื่อการบำรุงรักษาหรือกิจกรรมพิเศษ
+    @PostMapping("/{id}/calendar/blocks")
+    public ResponseEntity<CreateLocationBlockResponse> createLocationBlock(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody CreateLocationBlockRequest request
+    ) {
+        CreateLocationBlockResponse response = hostService.createLocationBlock(authorization, id, request);
+        return ResponseEntity.status(201).body(response);
     }
 }
