@@ -12,8 +12,8 @@ import java.util.UUID;
 
 public interface LocationRepository extends JpaRepository<Location, UUID>, LocationRepositoryCustom {
 
-    // สำหรับโหมด q-only (ไม่ near): ค้นหาชื่อหรือที่อยู่
-    Page<Location> findByNameContainingIgnoreCaseOrAddressTextContainingIgnoreCase(
+    // สำหรับโหมด q-only (ไม่ near): ค้นหาชื่อหรือที่อยู่ (เฉพาะ active locations)
+    Page<Location> findByNameContainingIgnoreCaseOrAddressTextContainingIgnoreCaseAndIsActiveTrue(
             String name, String address, Pageable pageable
     );
 
