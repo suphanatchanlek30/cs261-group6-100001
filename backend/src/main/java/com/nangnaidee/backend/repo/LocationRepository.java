@@ -27,5 +27,8 @@ public interface LocationRepository extends JpaRepository<Location, UUID>, Locat
      */
     List<Location> findByOwnerIdAndIsActiveOrderByCreatedAtDesc(Integer ownerId, boolean isActive);
 
-
+    /**
+     * Find locations owned by a specific user (host) with pagination
+     */
+    Page<Location> findByOwner_Id(Integer ownerId, Pageable pageable);
 }

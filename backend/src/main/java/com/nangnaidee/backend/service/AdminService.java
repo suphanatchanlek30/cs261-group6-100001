@@ -7,22 +7,27 @@ import com.nangnaidee.backend.dto.GetPaymentItemDto;
 import com.nangnaidee.backend.dto.GetPaymentResponse;
 import com.nangnaidee.backend.dto.PatchPaymentRequest;
 import com.nangnaidee.backend.dto.PatchPaymentResponse;
+import com.nangnaidee.backend.dto.PatchUserStatusRequest;
+import com.nangnaidee.backend.dto.PatchUserStatusResponse;
+import com.nangnaidee.backend.dto.PatchLocationStatusRequest;
+import com.nangnaidee.backend.dto.PatchLocationStatusResponse;
 import com.nangnaidee.backend.exception.*;
 import com.nangnaidee.backend.model.Payment;
 import com.nangnaidee.backend.model.Role;
 import com.nangnaidee.backend.model.User;
 import com.nangnaidee.backend.repo.PaymentRepository;
+import com.nangnaidee.backend.repo.LocationRepository;
 import com.nangnaidee.backend.repo.UserRepository;
+import com.nangnaidee.backend.repo.BookingRepository;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-import com.nangnaidee.backend.repo.BookingRepository;
+
+import java.util.Objects;
 
 
 import java.util.List;
@@ -38,6 +43,7 @@ public class AdminService {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
+    private final LocationRepository locationRepository;
     private final BookingRepository bookingRepository;
 
     @Transactional
@@ -56,7 +62,7 @@ public class AdminService {
             throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
         }
 
-        User admin = userRepository.findById(userId)
+        User admin = userRepository.findById(Objects.requireNonNull(userId))
                 .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
 
         // 2) Authz: ต้องมี role ADMIN เท่านั้น
@@ -168,11 +174,158 @@ public class AdminService {
         );
     }
 
+    public java.util.List<com.nangnaidee.backend.dto.LocationListItem> getHostLocations(
+            String authorizationHeader,
+            Integer hostId,
+            int page,
+            int size
+    ) {
+        // 1) Authn
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new com.nangnaidee.backend.exception.UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+
+        Integer userId;
+        try {
+            userId = jwtTokenProvider.getUserId(token);
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            throw new com.nangnaidee.backend.exception.UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+
+        var admin = userRepository.findById(userId)
+                .orElseThrow(() -> new com.nangnaidee.backend.exception.UnauthorizedException("ไม่พบผู้ใช้"));
+
+        // 2) Authz: must be ADMIN
+        java.util.Set<String> roleCodes = admin.getRoles().stream().map(com.nangnaidee.backend.model.Role::getCode).collect(java.util.stream.Collectors.toSet());
+        if (!roleCodes.contains("ADMIN")) {
+            throw new com.nangnaidee.backend.exception.ForbiddenException("ต้องเป็น ADMIN เท่านั้น");
+        }
+
+        // 3) Check target host exists
+        var host = userRepository.findById(hostId)
+                .orElseThrow(() -> new com.nangnaidee.backend.exception.NotFoundException("ไม่พบ Host ที่ระบุ"));
+
+        // 4) Query locations
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<com.nangnaidee.backend.model.Location> locationsPage = locationRepository.findByOwner_Id(hostId, pageable);
+
+        // 5) Map to DTO
+        java.util.List<com.nangnaidee.backend.dto.LocationListItem> items = locationsPage.stream().map(l -> new com.nangnaidee.backend.dto.LocationListItem(
+                l.getId(),
+                l.getName(),
+                l.getAddressText(),
+                l.getGeoLat(),
+                l.getGeoLng(),
+                l.getCoverImageUrl(),
+                null, // distanceKm not applicable
+                l.isActive()
+        )).toList();
+
+        return items;
+    }
+
     // helper สั้น ๆ สำหรับ code (ออปชัน)
     private String generateBookingCode(UUID bookingId) {
         // ตัวอย่างง่าย ๆ: BK-6ตัวแรกของ UUID (คุณจะใช้ Random/Sequence ก็ได้)
         return "BK-" + bookingId.toString().replace("-", "").substring(0, 6).toUpperCase();
     }
 
+    @Transactional
+    public PatchUserStatusResponse updateUserStatus(
+            String authorizationHeader,
+            Integer userId,
+            PatchUserStatusRequest request
+    ) {
+        // 1) Authn: ต้องมี Bearer token
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
 
+        Integer adminId;
+        try {
+            adminId = jwtTokenProvider.getUserId(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+
+        // 2) ตรวจสอบสิทธิ์ ADMIN
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
+
+        Set<String> roleCodes = admin.getRoles().stream()
+                .map(Role::getCode)
+                .collect(Collectors.toSet());
+        if (!roleCodes.contains("ADMIN")) {
+            throw new ForbiddenException("ต้องเป็น ADMIN เท่านั้น");
+        }
+
+        // 3) หาและตรวจสอบผู้ใช้ที่จะแก้ไข
+        User targetUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบผู้ใช้ที่ระบุ"));
+
+        // 4) ตรวจสอบค่า status
+        String status = request.getStatus();
+        if (status == null || status.isBlank()) {
+            throw new BadRequestException("ต้องระบุ status");
+        }
+
+        status = status.trim().toUpperCase();
+        if (!status.equals("SUSPENDED") && !status.equals("ACTIVE")) {
+            throw new BadRequestException("status ต้องเป็น SUSPENDED หรือ ACTIVE เท่านั้น");
+        }
+
+        // 5) อัพเดทสถานะ
+        targetUser.setActive(status.equals("ACTIVE"));
+        userRepository.save(targetUser);
+
+        return new PatchUserStatusResponse(status);
+    }
+
+    @Transactional
+    public PatchLocationStatusResponse updateLocationStatus(
+            String authorizationHeader,
+            UUID locationId,
+            PatchLocationStatusRequest request
+    ) {
+        // 1) Authn: ต้องมี Bearer token
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+
+        Integer adminId;
+        try {
+            adminId = jwtTokenProvider.getUserId(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+
+        // 2) ตรวจสอบสิทธิ์ ADMIN
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
+
+        Set<String> roleCodes = admin.getRoles().stream()
+                .map(Role::getCode)
+                .collect(Collectors.toSet());
+        if (!roleCodes.contains("ADMIN")) {
+            throw new ForbiddenException("ต้องเป็น ADMIN เท่านั้น");
+        }
+
+        // 3) หาและตรวจสอบสถานที่ที่จะแก้ไข
+        var location = locationRepository.findById(locationId)
+                .orElseThrow(() -> new NotFoundException("ไม่พบสถานที่ที่ระบุ"));
+
+        // 4) ตรวจสอบค่า isActive
+        if (request.getIsActive() == null) {
+            throw new BadRequestException("ต้องระบุ isActive");
+        }
+
+        // 5) อัพเดทสถานะ
+        location.setActive(request.getIsActive());
+        locationRepository.save(location);
+
+        return new PatchLocationStatusResponse(locationId, request.getIsActive(), request.getReason());
+    }
 }
