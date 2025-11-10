@@ -26,6 +26,10 @@ public class LocationQueryService {
     private final LocationRepository locationRepository;
     private final LocationUnitRepository locationUnitRepository;
 
+    /**
+     * ค้นหาสถานที่ (Public API) - เฉพาะ Location ที่ isActive = true เท่านั้น
+     * DRAFT, PENDING_REVIEW, REJECTED จะไม่แสดงใน Public
+     */
     public LocationListResponse search(String q, String near, Double radiusKm, Integer page, Integer size) {
         int p = (page == null || page < 0) ? 0 : page;
         int s = (size == null || size <= 0) ? 10 : Math.min(size, 100);
@@ -47,11 +51,11 @@ public class LocationQueryService {
             return new LocationListResponse(items, p, s, total);
         }
 
-        // q-only (หรือไม่มี filterเลย): ใช้ Page JPA ปกติ, sort ใหม่สุดก่อน
+        // q-only (หรือไม่มี filterเลย): ใช้ Page JPA ปกติ, sort ใหม่สุดก่อน (เฉพาะ active locations)
         Pageable pageable = PageRequest.of(p, s, Sort.by(Sort.Direction.DESC, "createdAt"));
         String query = (q == null) ? "" : q.trim();
         Page<Location> pageData = locationRepository
-                .findByNameContainingIgnoreCaseOrAddressTextContainingIgnoreCase(query, query, pageable);
+                .findByNameContainingIgnoreCaseOrAddressTextContainingIgnoreCaseAndIsActiveTrue(query, query, pageable);
 
         List<LocationListItem> items = pageData.getContent().stream()
                 .map(l -> new LocationListItem(
@@ -81,6 +85,8 @@ public class LocationQueryService {
     public LocationDetailResponse getById(UUID id) {
         Location loc = locationRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("ไม่พบสถานที่"));
+        
+        // Note: getById ไม่กรอง isActive เพราะอาจต้องใช้สำหรับ Admin หรือ Host Dashboard
 
         List<LocationUnit> units = locationUnitRepository.findByLocation_IdOrderByCodeAsc(id);
 

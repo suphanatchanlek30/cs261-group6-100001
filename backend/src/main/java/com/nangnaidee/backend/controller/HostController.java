@@ -6,12 +6,16 @@ import com.nangnaidee.backend.dto.*;
 import com.nangnaidee.backend.service.HostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/api/hosts")
@@ -118,6 +122,77 @@ public class HostController {
     ) {
         UpdateHostUnitResponse response = hostService.updateHostUnit(authorization, id, request);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Host: ดึงข้อมูลการจองเฉพาะรายการ
+     */
+    @GetMapping("/bookings/{bookingId}")
+    public ResponseEntity<GetBookingHostResponse> getBooking(
+            @RequestHeader(name = "Authorization") String authorizationHeader,
+            @PathVariable String bookingId) {
+        GetBookingHostResponse response = hostService.getBooking(authorizationHeader, bookingId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Host: ดึงข้อมูลการจองทั้งหมด (พร้อมกรอง)
+     */
+    @GetMapping("/bookings")
+    public ResponseEntity<Page<GetAllBookingHostResponse>> getAllBookings(
+            @RequestHeader(name = "Authorization") String authorizationHeader,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) UUID locationId,
+            @RequestParam(required = false) UUID unitId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sort) {
+
+        Page<GetAllBookingHostResponse> response = hostService.getallBooking(
+                authorizationHeader,
+                status,
+                locationId,
+                unitId,
+                from,
+                to,
+                page,
+                size,
+                sort);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Host: สรุปรายได้ (Revenue Summary)
+     */
+    @GetMapping("/revenue/summary")
+    public ResponseEntity<List<HostRevenueSummaryResponse>> getRevenueSummary(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(defaultValue = "day") String groupBy) {
+        
+        return ResponseEntity.ok(hostService.getRevenueSummary(
+            authorizationHeader, from, to, groupBy));
+    }
+
+    /**
+     * Host: รายการธุรกรรมรายได้ (Revenue Transactions)
+     */
+    @GetMapping("/revenue/transactions")
+    public ResponseEntity<Page<RevenueTransactionDto>> getRevenueTransactions(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(required = false) String method,
+            @RequestParam(required = false) UUID locationId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        return ResponseEntity.ok(hostService.getRevenueTransactions(
+            authorizationHeader, from, to, method, locationId, page, size));
     }
 
 }
