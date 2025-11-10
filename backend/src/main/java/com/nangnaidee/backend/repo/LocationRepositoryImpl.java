@@ -30,6 +30,7 @@ public class LocationRepositoryImpl implements LocationRepositoryCustom {
         FROM dbo.locations l
         WHERE (?3 IS NULL OR l.name LIKE ?4 OR l.address_text LIKE ?4)
           AND l.geo_lat IS NOT NULL AND l.geo_lng IS NOT NULL
+          AND l.is_active = 1
         """;
 
     @Override
