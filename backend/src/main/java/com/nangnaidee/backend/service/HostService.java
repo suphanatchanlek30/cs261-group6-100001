@@ -995,4 +995,104 @@ private final JwtTokenProvider jwtTokenProvider;
                 .build())
             .collect(Collectors.toList());
     }
+
+    /**
+     * Host dashboard: cards + bookingTrend + revenueDaily
+     * from/to optional (LocalDateTime); if null -> last 7 days
+     */
+    public com.nangnaidee.backend.dto.HostDashboardResponse getDashboard(
+            String authorizationHeader,
+            LocalDateTime from,
+            LocalDateTime to) {
+
+        User host = getAuthenticatedHost(authorizationHeader);
+        Integer ownerId = host.getId();
+
+        // Locations counts
+        List<Location> allLocations = locationRepository.findByOwnerIdOrderByCreatedAtDesc(ownerId);
+        int locationsTotal = allLocations.size();
+
+        // pending review count (isActive = false and rejectReason = PENDING_REVIEW_MARKER)
+        long pending = 0;
+        try {
+            var page = locationRepository.findByOwnerIdAndIsActiveFalseAndRejectReason(ownerId, PENDING_REVIEW_MARKER, org.springframework.data.domain.PageRequest.of(0, 1));
+            pending = page.getTotalElements();
+        } catch (Exception ignored) {
+            // fallback scan
+            pending = allLocations.stream().filter(l -> !l.isActive() && PENDING_REVIEW_MARKER.equals(l.getRejectReason())).count();
+        }
+
+        // approved count
+        List<Location> approvedList = locationRepository.findByOwnerIdAndIsActiveOrderByCreatedAtDesc(ownerId, true);
+        int approved = approvedList.size();
+
+        // Today income (sum of APPROVED payments reviewed_at within today)
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDateTime todayStart = today.atStartOfDay();
+        java.time.LocalDateTime todayEnd = today.plusDays(1).atStartOfDay();
+
+        java.math.BigDecimal todayIncome = java.math.BigDecimal.ZERO;
+        try {
+            var paymentsPage = revenueTransactionRepository.findRevenueTransactions(ownerId, null, null, todayStart, todayEnd, org.springframework.data.domain.PageRequest.of(0, 1000));
+            for (Object[] row : paymentsPage.getContent()) {
+                if (row == null || row.length < 3) continue;
+                Object amt = row[2];
+                if (amt instanceof java.math.BigDecimal bd) todayIncome = todayIncome.add(bd);
+                else if (amt instanceof Number n) todayIncome = todayIncome.add(new java.math.BigDecimal(n.toString()));
+            }
+        } catch (Exception ex) {
+            // ignore and keep zero if repo fails
+        }
+
+        // Charts: use hostRevenueSummaryRepository for bookings+revenue per day
+        // default range: last 7 days (including today)
+        java.time.LocalDate endDate = (to == null) ? java.time.LocalDate.now() : to.toLocalDate();
+        java.time.LocalDate startDate = (from == null) ? endDate.minusDays(6) : from.toLocalDate();
+
+        java.time.LocalDateTime fromDt = startDate.atStartOfDay();
+        java.time.LocalDateTime toDt = endDate.plusDays(1).atStartOfDay();
+
+        List<Object[]> rows = hostRevenueSummaryRepository.findRevenueSummaryByDay(ownerId, fromDt, toDt);
+        // Map date -> (revenue, bookings)
+        java.util.Map<java.time.LocalDate, java.util.Map<String, Object>> map = new java.util.HashMap<>();
+        if (rows != null) {
+            for (Object[] r : rows) {
+                if (r == null || r.length < 3) continue;
+                java.sql.Date d = (java.sql.Date) r[0];
+                java.time.LocalDate ld = d.toLocalDate();
+                java.math.BigDecimal rev = (r[1] == null) ? java.math.BigDecimal.ZERO : (java.math.BigDecimal) r[1];
+                int cnt = (r[2] == null) ? 0 : ((Number) r[2]).intValue();
+                var m = new java.util.HashMap<String, Object>();
+                m.put("rev", rev);
+                m.put("cnt", cnt);
+                map.put(ld, m);
+            }
+        }
+
+        List<com.nangnaidee.backend.dto.HostDashboardResponse.BookingTrendItem> bookingTrend = new java.util.ArrayList<>();
+        List<com.nangnaidee.backend.dto.HostDashboardResponse.RevenueDailyItem> revenueDaily = new java.util.ArrayList<>();
+
+        java.time.LocalDate cursor = startDate;
+        while (!cursor.isAfter(endDate)) {
+            var entry = map.get(cursor);
+            int cnt = 0;
+            java.math.BigDecimal rev = java.math.BigDecimal.ZERO;
+            if (entry != null) {
+                cnt = (Integer) entry.get("cnt");
+                rev = (java.math.BigDecimal) entry.get("rev");
+            }
+            bookingTrend.add(new com.nangnaidee.backend.dto.HostDashboardResponse.BookingTrendItem(cursor, cnt));
+            revenueDaily.add(new com.nangnaidee.backend.dto.HostDashboardResponse.RevenueDailyItem(cursor, rev));
+            cursor = cursor.plusDays(1);
+        }
+
+        com.nangnaidee.backend.dto.HostDashboardResponse.Cards cards = new com.nangnaidee.backend.dto.HostDashboardResponse.Cards(
+                locationsTotal,
+                (int) pending,
+                approved,
+                todayIncome
+        );
+
+        return new com.nangnaidee.backend.dto.HostDashboardResponse(cards, bookingTrend, revenueDaily);
+    }
 }
