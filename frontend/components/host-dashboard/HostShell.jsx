@@ -20,6 +20,7 @@ export default function HostShell({ children }) {
     if (!isAuthenticated()) {
       router.replace("/login?next=/host");
     }
+    router.replace("/host/payments")
   }, [router]);
 
   return (

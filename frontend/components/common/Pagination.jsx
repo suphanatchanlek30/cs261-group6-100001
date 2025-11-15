@@ -11,7 +11,7 @@ export default function Pagination({ page = 0, totalPages = 1, onPageChange }) {
         type="button"
         onClick={() => onPageChange(0)}
         disabled={page === 0}
-        className="rounded border px-2 py-1 text-sm disabled:opacity-40"
+        className="rounded border border-gray-600 px-2 py-1 text-sm disabled:opacity-40"
       >
         «
       </button>
@@ -19,7 +19,7 @@ export default function Pagination({ page = 0, totalPages = 1, onPageChange }) {
         type="button"
         onClick={prev}
         disabled={page === 0}
-        className="rounded border px-2 py-1 text-sm disabled:opacity-40"
+        className="rounded border border-gray-600 px-2 py-1 text-sm disabled:opacity-40"
       >
         ‹
       </button>
@@ -30,7 +30,7 @@ export default function Pagination({ page = 0, totalPages = 1, onPageChange }) {
         type="button"
         onClick={next}
         disabled={page >= totalPages - 1}
-        className="rounded border px-2 py-1 text-sm disabled:opacity-40"
+        className="rounded border border-gray-600 px-2 py-1 text-sm disabled:opacity-40"
       >
         ›
       </button>
@@ -38,7 +38,7 @@ export default function Pagination({ page = 0, totalPages = 1, onPageChange }) {
         type="button"
         onClick={() => onPageChange(totalPages - 1)}
         disabled={page >= totalPages - 1}
-        className="rounded border px-2 py-1 text-sm disabled:opacity-40"
+        className="rounded border border-gray-600 px-2 py-1 text-sm disabled:opacity-40"
       >
         »
       </button>

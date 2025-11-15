@@ -2,12 +2,16 @@
 
 import SidebarLink from "@/components/admin-dashboard/SidebarLink";
 import { FiHome, FiClipboard, FiCreditCard, FiStar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { CgProfile } from "react-icons/cg";
+import { LiaMoneyBillWaveAltSolid } from "react-icons/lia";
 
 export default function HostSidebar({ isCollapsed, setIsCollapsed }) {
   const items = [
     { label: "Financial Report", href: "/host/payments", icon: <FiCreditCard /> },
     { label: "Manage Location", href: "/host/locations", icon: <FiHome /> },
     { label: "Booking List", href: "/host/bookings", icon: <FiClipboard /> },
+    { label: "My Profile", href: "/host/profile", icon: <CgProfile /> },
+    { label: "My Revenue", href: "/host/revenue", icon: <LiaMoneyBillWaveAltSolid  /> },
   ];
 
   return (

@@ -57,24 +57,33 @@ private final JwtTokenProvider jwtTokenProvider;
 
     // ⭐️ ใช้ค่าคงที่พิเศษเพื่อระบุสถานะ "รอตรวจสอบ"
     private static final String PENDING_REVIEW_MARKER = "__PENDING__";
+    // ⭐️ ใช้ค่าคงที่พิเศษเพื่อระบุว่าเคย APPROVED แล้ว แต่เจ้าของปิด Active ชั่วคราว
+    private static final String APPROVED_INACTIVE_MARKER = "__APPROVED__";
 
     /**
      * Helper กลางสำหรับแปลง Entity เป็น Status String
      */
     private String getPublishStatus(Location loc) {
-        if (loc.isActive()) {
-            return "APPROVED"; // 1. อนุมัติแล้ว (isActive = true)
-        }
-
+        // ลำดับความสำคัญของสถานะจาก reason ก่อน
         String reason = loc.getRejectReason();
-        if (reason == null) {
-            return "DRAFT"; // 2. ร่าง (isActive = false, reason = null)
-        }
         if (PENDING_REVIEW_MARKER.equals(reason)) {
-            return "PENDING_REVIEW"; // 3. รอตวรจสอบ (isActive = false, reason = "__PENDING__")
+            return "PENDING_REVIEW";
+        }
+        if (APPROVED_INACTIVE_MARKER.equals(reason)) {
+            // เคย APPROVED แล้ว แต่ถูกปิด Active ชั่วคราว
+            return "APPROVED";
+        }
+        if (reason != null) {
+            // มีข้อความอื่น => REJECTED
+            return "REJECTED";
         }
 
-        return "REJECTED"; // 4. ถูกปฏิเสธ (isActive = false, reason = "มีข้อความ")
+        // ไม่มี reason
+        if (loc.isActive()) {
+            return "APPROVED"; // อนุมัติและเปิดใช้งาน
+        }
+
+        return "DRAFT"; // ยังเป็นร่าง (ยังไม่เคยอนุมัติ)
     }
 
     /**
@@ -155,13 +164,14 @@ private final JwtTokenProvider jwtTokenProvider;
         String statusUpper = (status == null) ? null : status.trim().toUpperCase();
 
         return locations.stream()
-                .map(loc -> new HostLocationListItem(
-                        loc.getId(),
-                        loc.getName(),
-                        loc.getAddressText(),
-                        loc.getCoverImageUrl(),
-                        getPublishStatus(loc) // 👈 ใช้ Helper ใหม่
-                ))
+            .map(loc -> new HostLocationListItem(
+                loc.getId(),
+                loc.getName(),
+                loc.getAddressText(),
+                loc.getCoverImageUrl(),
+                getPublishStatus(loc), // 👈 ใช้ Helper ใหม่
+                loc.isActive()
+            ))
                 .filter(item -> { // กรองด้วย status ที่แปลงแล้ว
                     if (statusUpper == null || statusUpper.isBlank()) {
                         return true; // ไม่กรอง
@@ -220,9 +230,38 @@ private final JwtTokenProvider jwtTokenProvider;
 
         String currentStatus = getPublishStatus(loc); // 👈 ใช้ Helper ใหม่
 
-        // ⭐️ ตรวจสอบ Logic 422
+        // ⭐️ ตรวจสอบ Logic: เมื่อ APPROVED อนุญาตแก้เฉพาะ isActive เท่านั้น
         if ("APPROVED".equals(currentStatus)) {
-            throw new UnprocessableEntityException("ไม่สามารถแก้ไขสถานที่ที่ได้รับการอนุมัติ (APPROVED) แล้ว");
+            // ต้องส่งมาเฉพาะ isActive และห้ามแก้ฟิลด์อื่น
+            boolean hasOtherFields =
+                    request.getName() != null ||
+                    request.getDescription() != null ||
+                    request.getAddress() != null ||
+                    request.getGeoLat() != null ||
+                    request.getGeoLng() != null ||
+                    request.getCoverImageUrl() != null;
+
+            if (hasOtherFields) {
+                throw new UnprocessableEntityException("เมื่อสถานะ APPROVED สามารถแก้ได้เฉพาะ isActive เท่านั้น");
+            }
+            if (request.getIsActive() == null) {
+                throw new UnprocessableEntityException("กรุณาระบุ isActive เป็น true/false");
+            }
+
+            boolean target = request.getIsActive();
+            loc.setActive(target);
+            // เก็บ marker เพื่อให้สถานะยังคงเป็น APPROVED แม้ inactive
+            if (target) {
+                // เปิดใช้งาน -> ล้าง marker
+                if (APPROVED_INACTIVE_MARKER.equals(loc.getRejectReason())) {
+                    loc.setRejectReason(null);
+                }
+            } else {
+                // ปิดใช้งาน -> set marker
+                loc.setRejectReason(APPROVED_INACTIVE_MARKER);
+            }
+            locationRepository.save(loc);
+            return getMyLocationDetail(authorizationHeader, locationId);
         }
         if ("PENDING_REVIEW".equals(currentStatus)) {
             throw new UnprocessableEntityException("ไม่สามารถแก้ไขสถานที่ที่กำลังรอการตรวจสอบ (PENDING_REVIEW)");
@@ -238,7 +277,8 @@ private final JwtTokenProvider jwtTokenProvider;
         if (request.getCoverImageUrl() != null) { loc.setCoverImageUrl(request.getCoverImageUrl()); changed = true; }
 
         if (request.getIsActive() != null) {
-            throw new UnprocessableEntityException("กรุณาใช้ปุ่ม 'Submit for Review' (POST .../submit) เพื่อส่งเผยแพร่");
+            // ใน DRAFT/REJECTED ไม่ให้แก้ isActive โดยตรง ให้ใช้ flow submit/approve
+            throw new UnprocessableEntityException("แก้ isActive ได้เฉพาะตอนสถานะ APPROVED เท่านั้น");
         }
 
         // ⭐️ ถ้าแก้ REJECTED มันจะกลับไปเป็น DRAFT
