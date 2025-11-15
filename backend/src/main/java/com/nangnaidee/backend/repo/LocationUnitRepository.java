@@ -18,6 +18,9 @@ public interface LocationUnitRepository extends JpaRepository<LocationUnit, UUID
 
     // ใช้เช็ค code ซ้ำใน location เดียวกัน (ไม่สนตัวพิมพ์)
     boolean existsByLocation_IdAndCodeIgnoreCase(UUID locationId, String code);
+    
+    // ค้นหา unit ด้วย locationId และ code (ไม่สนตัวพิมพ์)
+    LocationUnit findByLocation_IdAndCodeIgnoreCase(UUID locationId, String code);
 
     // Search available units - ใช้ subquery เพื่อแก้ปัญหา alias ใน ORDER BY
     @Query(value = """

@@ -18,14 +18,14 @@ export default function MobileMenu({ authed, onClose, onLogout }) {
             <>
               <a
                 href="/login"
-                className="block text-center bg-[#1800ad] text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-[#10026a]"
+                className="block text-center bg-[#7C3AED] text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-[#3a1777]"
                 onClick={onClose}
               >
                 Sign In
               </a>
               <a
                 href="/register"
-                className="block text-center px-4 py-2 rounded-md text-sm font-semibold text-[#1800ad] border border-[#e0dbff] hover:bg-[#f7f6ff]"
+                className="block text-center px-4 py-2 rounded-md text-sm font-semibold text-[#7C3AED] border border-[#e0dbff] hover:bg-[#f7f6ff]"
                 onClick={onClose}
               >
                 Register
@@ -34,7 +34,7 @@ export default function MobileMenu({ authed, onClose, onLogout }) {
           ) : (
             <button
               onClick={onLogout}
-              className="w-full text-center bg-[#1800ad] text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-[#1F0C48]"
+              className="w-full text-center bg-[#7C3AED] text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-[#3a1777]"
             >
               Sign Out
             </button>

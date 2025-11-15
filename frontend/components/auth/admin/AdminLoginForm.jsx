@@ -9,12 +9,12 @@ import { setToken } from "@/utils/authClient";
 // import jwtDecode from "jwt-decode";
 
 export default function AdminLoginForm({
-  adminRedirect = "/admin/dashboard",
-  fallbackUserRedirect = "/admin",
+  adminRedirect = "/admin/users",
+  fallbackUserRedirect = "/home",
 }) {
   const router = useRouter();
   const search = useSearchParams();
-  const next = search.get("next"); // รองรับ /admin?next=/admin/dashboard
+  const next = search.get("next");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,6 +25,7 @@ export default function AdminLoginForm({
     e.preventDefault();
     setError("");
     setLoading(true);
+
     try {
       const res = await loginservice({ email, password });
       if (!res.ok) {
@@ -34,16 +35,11 @@ export default function AdminLoginForm({
 
       if (res.token) setToken(res.token);
 
-      // ดึง roles จาก response; ถ้าไม่มีค่อยลอง decode token (เปิดใช้ถ้าจำเป็น)
+      // ใช้ roles ที่ normalize แล้วจาก service
       let roles = res.roles || [];
-      // if ((!roles || roles.length === 0) && res.token) {
-      //   const payload = jwtDecode(res.token);
-      //   roles = payload?.roles || payload?.authorities || [];
-      // }
 
-      const isAdmin = (roles || []).includes("ADMIN");
+      const isAdmin = roles.includes("ADMIN");
 
-      // ลำดับการ redirect
       router.replace(next || (isAdmin ? adminRedirect : fallbackUserRedirect));
     } catch {
       setError("เกิดข้อผิดพลาด กรุณาลองใหม่");

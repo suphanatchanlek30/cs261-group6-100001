@@ -7,18 +7,33 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Data
-@AllArgsConstructor
 public class BookingListItem {
     private UUID id;
     private UUID locationUnitId;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private OffsetDateTime startTime;
+    private OffsetDateTime endTime;
     private int hours;
     private BigDecimal total;
     private String status;
     private String bookingCode;
     private LocalDateTime createdAt;
+
+    public BookingListItem(UUID id, UUID locationUnitId,
+                           OffsetDateTime startTime, OffsetDateTime endTime,
+                           int hours, BigDecimal total, String status,
+                           String bookingCode, LocalDateTime createdAt) {
+        this.id = id;
+        this.locationUnitId = locationUnitId;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.hours = hours;
+        this.total = total;
+        this.status = status;
+        this.bookingCode = bookingCode;
+        this.createdAt = createdAt;
+    }
 }

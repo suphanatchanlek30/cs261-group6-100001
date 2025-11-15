@@ -43,10 +43,19 @@ export default function LoginForm({ showRegisterLink = true }) {
         setToken(token); // trigger "auth-changed" ให้ Navbar อัปเดต
       }
 
-      // ไปหน้า home
-      setOkMsg("เข้าสู่ระบบสำเร็จ! กำลังพาไปหน้าหลัก...");
-      // ไปหน้า login (อาจพก email ไปเติมในฟอร์ม)
-      setTimeout(() => router.replace(nextPath), 700);
+      // กำหนดปลายทางตามสิทธิ์ (Role)
+      const roles = res.roles || [];
+      let dest = nextPath || "/home";
+      if (roles.includes("ADMIN")) {
+        dest = "/admin/users";
+      } else if (roles.includes("HOST")) {
+        dest = "/host";
+      } else {
+        dest = nextPath || "/home";
+      }
+
+      setOkMsg("เข้าสู่ระบบสำเร็จ! กำลังพาไปหน้าถัดไป...");
+      setTimeout(() => router.replace(dest), 700);
 
     } catch (err) {
       setError("เกิดข้อผิดพลาด กรุณาลองใหม่");

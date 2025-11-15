@@ -52,13 +52,13 @@ export default function Navbar() {
               <div className="flex items-center gap-3">
                 <a
                   href="/login"
-                  className="bg-[#1800ad] text-white px-5 py-2 rounded-md text-sm font-semibold hover:bg-[#10026a]"
+                  className="bg-[#7C3AED] text-white px-5 py-2 rounded-md text-sm font-semibold hover:bg-[#3a1777]"
                 >
                   Sign In
                 </a>
                 <a
                   href="/register"
-                  className="px-5 py-2 rounded-md text-sm font-semibold text-[#1800ad] border border-[#e0dbff] hover:bg-[#f7f6ff]"
+                  className="px-5 py-2 rounded-md text-sm font-semibold text-[#7C3AED] border border-[#e0dbff] hover:bg-[#f7f6ff]"
                 >
                   Register
                 </a>
@@ -66,7 +66,7 @@ export default function Navbar() {
             ) : (
               <button
                 onClick={handleLogout}
-                className="px-5 py-2 rounded-md text-sm font-semibold text-white bg-[#1800ad] hover:bg-[#1F0C48]"
+                className="px-5 py-2 rounded-md text-sm font-semibold text-white bg-[#7C3AED] hover:bg-[#3a1777]"
               >
                 Sign Out
               </button>

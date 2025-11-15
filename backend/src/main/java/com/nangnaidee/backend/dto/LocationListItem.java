@@ -18,4 +18,5 @@ public class LocationListItem {
     private String coverImageUrl;
     // ถ้าค้นหาแบบ near: จะใส่ distanceKm (ถ้าไม่ near จะเป็น null)
     private Double distanceKm;
+    private Boolean isActive;
 }

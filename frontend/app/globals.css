@@ -1,4 +1,10 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+
+* {
+  font-family: var(--font-noto-sans-thai), ui-sans-serif, system-ui, sans-serif;
+}
 
 /* NicoMoji font */
 

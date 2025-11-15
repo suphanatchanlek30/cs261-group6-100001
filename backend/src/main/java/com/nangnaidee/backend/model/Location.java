@@ -7,8 +7,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
 @Entity
@@ -22,17 +24,17 @@ public class Location {
     private UUID id; // ถ้าไม่ส่งมา เราจะ gen เองใน @PrePersist
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", nullable = false)  // FK -> users.id (INT)
+    @JoinColumn(name = "owner_id", nullable = false) // FK -> users.id (INT)
     private User owner;
 
-    @Column(name = "name", nullable = false, length = 200)
+    @Column(name = "name", nullable = false, length = 200, columnDefinition = "NVARCHAR(200)")
     @ToString.Include
     private String name;
 
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "NVARCHAR(255)")
     private String description;
 
-    @Column(name = "address_text", length = 500)
+    @Column(name = "address_text", length = 500, columnDefinition = "NVARCHAR(500)")
     private String addressText;
 
     @Column(name = "geo_lat")
@@ -41,11 +43,11 @@ public class Location {
     @Column(name = "geo_lng")
     private Double geoLng;
 
-    @Column(name = "cover_image_url", length = 600)
+    @Column(name = "cover_image_url", length = 600, columnDefinition = "NVARCHAR(600)")
     private String coverImageUrl;
 
     // ✅ เพิ่มฟิลด์ publicId ไว้จัดการรูป (ลบ/แปลง) ได้ง่าย
-    @Column(name = "cover_image_public_id", length = 300)
+    @Column(name = "cover_image_public_id", length = 300, columnDefinition = "NVARCHAR(300)")
     private String coverImagePublicId;
 
     @Column(name = "is_active", nullable = false)
@@ -54,9 +56,13 @@ public class Location {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "reject_reason", length = 500, columnDefinition = "NVARCHAR(500)")
+    private String rejectReason;
+
     // ✅ เผื่อกรณีไม่ได้เซ็ต id มาจาก service
     @PrePersist
     public void prePersist() {
-        if (id == null) id = UUID.randomUUID();
+        if (id == null)
+            id = UUID.randomUUID();
     }
 }

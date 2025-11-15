@@ -7,8 +7,10 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
 @Entity
@@ -30,21 +32,21 @@ public class LocationUnit {
     @Column(name = "location_id", nullable = false, insertable = false, updatable = false)
     private UUID locationId;
 
-    @Column(name = "code", nullable = false, length = 100)
+    @Column(name = "code", nullable = false, length = 100, columnDefinition = "NVARCHAR(100)")
     @ToString.Include
     private String code;
 
-    @Column(name = "name", length = 200)
+    @Column(name = "name", length = 200, columnDefinition = "NVARCHAR(200)")
     private String name;
 
-    @Column(name = "image_url", length = 600)
+    @Column(name = "image_url", length = 600, columnDefinition = "NVARCHAR(600)")
     private String imageUrl;
 
     // ✅ เก็บ publicId ของ Cloudinary
-    @Column(name = "image_public_id", length = 300)
+    @Column(name = "image_public_id", length = 300, columnDefinition = "NVARCHAR(300)")
     private String imagePublicId;
 
-    @Column(name = "short_desc", length = 300)
+    @Column(name = "short_desc", length = 300, columnDefinition = "NVARCHAR(300)")
     private String shortDesc;
 
     @Column(name = "capacity", nullable = false)
@@ -58,6 +60,7 @@ public class LocationUnit {
 
     @PrePersist
     public void prePersist() {
-        if (id == null) id = UUID.randomUUID();
+        if (id == null)
+            id = UUID.randomUUID();
     }
 }
