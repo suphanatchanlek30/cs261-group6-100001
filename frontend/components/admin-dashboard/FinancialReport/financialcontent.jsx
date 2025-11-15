@@ -1,10 +1,14 @@
 // components/admin-dashboard/FinancialReport/financialcontent.jsx
 "use client";
 
+import { useRef } from "react";
 import { HiCalendarDays, HiBuildingOffice2 } from "react-icons/hi2";
 import { FaSackDollar } from "react-icons/fa6";
+import IncomeReportChart from './financialincomereport.jsx';
+import FinancialPrintButton from './financialprintbutton.jsx'; 
 
 export default function FinancialReportContent() {
+    
     const totalBookings = 23;
     const totalIncome = 3450;
     const ActiveLocations = 2;
@@ -22,22 +26,30 @@ export default function FinancialReportContent() {
     );
 
     return (
-        <section className="grid gap-4 md:grid-cols-3 -mt-4">
-            <StatCard
-                icon={<HiCalendarDays size={20} />}
-                value={totalBookings}
-                label="Total Bookings"
-            />
-            <StatCard
-                icon={<FaSackDollar size={20} />}
-                value={`฿${totalIncome.toLocaleString()}`}
-                label="Total Income"
-            />
-            <StatCard
-                icon={<HiBuildingOffice2 size={20} />}
-                value={ActiveLocations}
-                label="Active Locations"
-            />
-        </section>
+        <div className="space-y-6">
+            
+                <section className="grid gap-4 md:grid-cols-3 -mt-4">
+                    <StatCard
+                        icon={<HiCalendarDays size={20} />}
+                        value={totalBookings}
+                        label="Total Bookings"
+                    />
+                    <StatCard
+                        icon={<FaSackDollar size={20} />}
+                        value={`฿${totalIncome.toLocaleString()}`}
+                        label="Total Income"
+                    />
+                    <StatCard
+                        icon={<HiBuildingOffice2 size={20} />}
+                        value={ActiveLocations}
+                        label="Active Locations"
+                    />
+                </section>
+
+                <IncomeReportChart />
+
+                <FinancialPrintButton />
+        </div>
+         
     );
 }

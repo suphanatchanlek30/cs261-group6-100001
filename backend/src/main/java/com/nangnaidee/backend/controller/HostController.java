@@ -2,19 +2,43 @@
 
 package com.nangnaidee.backend.controller;
 
-import com.nangnaidee.backend.dto.*;
-import com.nangnaidee.backend.service.HostService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import com.nangnaidee.backend.dto.CreateDraftLocationResponse;
+import com.nangnaidee.backend.dto.CreateHostUnitRequest;
+import com.nangnaidee.backend.dto.CreateHostUnitResponse;
+import com.nangnaidee.backend.dto.CreateLocationRequest;
+import com.nangnaidee.backend.dto.GetAllBookingHostResponse;
+import com.nangnaidee.backend.dto.GetBookingHostResponse;
+import com.nangnaidee.backend.dto.HostLocationDetailResponse;
+import com.nangnaidee.backend.dto.HostLocationListItem;
+import com.nangnaidee.backend.dto.HostRevenueSummaryResponse;
+import com.nangnaidee.backend.dto.MeResponse;
+import com.nangnaidee.backend.dto.RevenueTransactionDto;
+import com.nangnaidee.backend.dto.SubmitReviewResponse;
+import com.nangnaidee.backend.dto.UpdateHostUnitRequest;
+import com.nangnaidee.backend.dto.UpdateHostUnitResponse;
+import com.nangnaidee.backend.dto.UpdateLocationRequest;
+import com.nangnaidee.backend.service.HostService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 
 @RestController
@@ -193,6 +217,22 @@ public class HostController {
         
         return ResponseEntity.ok(hostService.getRevenueTransactions(
             authorizationHeader, from, to, method, locationId, page, size));
+    }
+
+    /**
+     * Host Dashboard
+     * GET /api/hosts/dashboard
+     * role: HOST
+     * optional query params: from, to (ISO-8601 datetime)
+     */
+    @GetMapping("/dashboard")
+    public ResponseEntity<com.nangnaidee.backend.dto.HostDashboardResponse> getDashboard(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime from,
+            @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime to
+    ) {
+        var res = hostService.getDashboard(authorizationHeader, from, to);
+        return ResponseEntity.ok(res);
     }
 
 }
