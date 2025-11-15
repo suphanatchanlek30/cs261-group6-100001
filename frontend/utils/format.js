@@ -14,3 +14,9 @@ export function formatLocalTime(iso) {
   const d = new Date(iso);
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 }
+
+// Format number into Thai Baht currency without satang
+export function formatTHB(amount) {
+  const n = Number(amount || 0);
+  return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+}
