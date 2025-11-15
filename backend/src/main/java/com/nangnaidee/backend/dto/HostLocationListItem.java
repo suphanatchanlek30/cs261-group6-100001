@@ -2,11 +2,11 @@
 
 package com.nangnaidee.backend.dto;
 
+import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -17,4 +17,5 @@ public class HostLocationListItem {
     private String address;
     private String coverImageUrl;
     private String status; // "DRAFT" หรือ "APPROVED"
+    private boolean isActive;
 }

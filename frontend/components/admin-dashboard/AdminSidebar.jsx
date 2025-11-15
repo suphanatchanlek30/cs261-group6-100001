@@ -9,12 +9,12 @@ import { LuChartNoAxesCombined } from "react-icons/lu";
 
 export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
   const items = [
-    { label: "Manage Users", href: "/admin/users", icon: <FiUsers /> },
-    { label: "Manage Location", href: "/admin/locations", icon: <FiMapPin /> },
-    { label: "Manage Booking", href: "/admin/bookings", icon: <FiClipboard /> },
-    { label: "Manage Review", href: "/admin/reviews", icon: <FiStar /> },
-    { label: "Payments", href: "/admin/payments", icon: <FiCreditCard /> },
     { label: "Financial Report", href: "/admin/FinancialReport", icon: <LuChartNoAxesCombined /> },
+    { label: "Review Location", href: "/admin/reviewlocations", icon: <FiClipboard /> },
+    { label: "Manage Location", href: "/admin/locations", icon: <FiMapPin /> },
+    { label: "Manage Review", href: "/admin/reviews", icon: <FiStar /> },
+    { label: "Manage Users", href: "/admin/users", icon: <FiUsers /> },
+    { label: "Payments", href: "/admin/payments", icon: <FiCreditCard /> },
   ];
 
   return (
