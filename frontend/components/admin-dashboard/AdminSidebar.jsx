@@ -15,8 +15,8 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
     { label: "Manage Review", href: "/admin/reviews", icon: <FiStar /> },
     { label: "Payments", href: "/admin/payments", icon: <FiCreditCard /> },
     { label: "Financial Report", href: "/admin/FinancialReport", icon: <LuChartNoAxesCombined /> },
-  ];
-
+   {label: "Transaction", href: "/admin/transaction", icon: <LuChartNoAxesCombined /> },
+    ];
   return (
     <aside
       className={[
