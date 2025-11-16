@@ -978,7 +978,7 @@ private final JwtTokenProvider jwtTokenProvider;
 	//ของฟิลม์
 	//ขั้นตอนในการ merge เรานําโค้ดของทั้ง คู่ มา combine กันเป็นวิธีแรกที่เราจะใช้ เราเชื่อว่ามันน่าจะทํางานรวมกัน ถ้าไม่แย่แน่ๆ
 
-    public List<HostRevenueSummaryResponse> getRevenueSummary(
+        public List<HostRevenueSummaryResponse> getRevenueSummary(
             String authorizationHeader,
             LocalDateTime from,
             LocalDateTime to,
@@ -1016,34 +1016,65 @@ private final JwtTokenProvider jwtTokenProvider;
             throw new BadRequestException("from ต้องมาก่อน to");
         }
 
-        // 4) ตรวจสอบ groupBy
-        if (!"day".equals(groupBy)) {
-            throw new BadRequestException("groupBy ต้องเป็น 'day' เท่านั้น");
+        // 4) ตรวจสอบ groupBy และ Query ข้อมูลตาม group
+        if (groupBy == null || groupBy.isBlank()) groupBy = "day";
+
+        if ("day".equalsIgnoreCase(groupBy)) {
+            List<Object[]> results = hostRevenueSummaryRepository.findRevenueSummaryByDay(
+                userId, from, to
+            );
+            return results.stream()
+                .map(row -> HostRevenueSummaryResponse.builder()
+                    .date(((java.sql.Date) row[0]).toLocalDate().atStartOfDay())
+                    .totalRevenue((BigDecimal) row[1])
+                    .totalBookings(((Number) row[2]).intValue())
+                    .build())
+                .collect(Collectors.toList());
+        } else if ("month".equalsIgnoreCase(groupBy)) {
+            List<Object[]> results = hostRevenueSummaryRepository.findRevenueSummaryByMonth(
+                userId, from, to
+            );
+            return results.stream()
+                .map(row -> {
+                    int yr = ((Number) row[0]).intValue();
+                    int mon = ((Number) row[1]).intValue();
+                    java.time.LocalDateTime dt = java.time.LocalDate.of(yr, mon, 1).atStartOfDay();
+                    return HostRevenueSummaryResponse.builder()
+                        .date(dt)
+                        .totalRevenue((BigDecimal) row[2])
+                        .totalBookings(((Number) row[3]).intValue())
+                        .build();
+                })
+                .collect(Collectors.toList());
+        } else if ("year".equalsIgnoreCase(groupBy)) {
+            List<Object[]> results = hostRevenueSummaryRepository.findRevenueSummaryByYear(
+                userId, from, to
+            );
+            return results.stream()
+                .map(row -> {
+                    int yr = ((Number) row[0]).intValue();
+                    java.time.LocalDateTime dt = java.time.LocalDate.of(yr, 1, 1).atStartOfDay();
+                    return HostRevenueSummaryResponse.builder()
+                        .date(dt)
+                        .totalRevenue((BigDecimal) row[1])
+                        .totalBookings(((Number) row[2]).intValue())
+                        .build();
+                })
+                .collect(Collectors.toList());
+        } else {
+            throw new BadRequestException("groupBy ต้องเป็น 'day', 'month' หรือ 'year'");
         }
-
-        // 5) Query ข้อมูล
-        List<Object[]> results = hostRevenueSummaryRepository.findRevenueSummaryByDay(
-            userId, from, to
-        );
-
-        // 6) แปลงข้อมูล
-        return results.stream()
-            .map(row -> HostRevenueSummaryResponse.builder()
-                .date(((java.sql.Date) row[0]).toLocalDate().atStartOfDay())
-                .totalRevenue((BigDecimal) row[1])
-                .totalBookings(((Number) row[2]).intValue())
-                .build())
-            .collect(Collectors.toList());
     }
 
     /**
      * Host dashboard: cards + bookingTrend + revenueDaily
      * from/to optional (LocalDateTime); if null -> last 7 days
      */
-    public com.nangnaidee.backend.dto.HostDashboardResponse getDashboard(
+        public com.nangnaidee.backend.dto.HostDashboardResponse getDashboard(
             String authorizationHeader,
             LocalDateTime from,
-            LocalDateTime to) {
+            LocalDateTime to,
+            String groupBy) {
 
         User host = getAuthenticatedHost(authorizationHeader);
         Integer ownerId = host.getId();
@@ -1066,71 +1097,174 @@ private final JwtTokenProvider jwtTokenProvider;
         List<Location> approvedList = locationRepository.findByOwnerIdAndIsActiveOrderByCreatedAtDesc(ownerId, true);
         int approved = approvedList.size();
 
-        // Today income (sum of APPROVED payments reviewed_at within today)
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.time.LocalDateTime todayStart = today.atStartOfDay();
-        java.time.LocalDateTime todayEnd = today.plusDays(1).atStartOfDay();
+        // groupBy default
+        if (groupBy == null || groupBy.isBlank()) groupBy = "day";
 
-        java.math.BigDecimal todayIncome = java.math.BigDecimal.ZERO;
-        try {
-            var paymentsPage = revenueTransactionRepository.findRevenueTransactions(ownerId, null, null, todayStart, todayEnd, org.springframework.data.domain.PageRequest.of(0, 1000));
-            for (Object[] row : paymentsPage.getContent()) {
-                if (row == null || row.length < 3) continue;
-                Object amt = row[2];
-                if (amt instanceof java.math.BigDecimal bd) todayIncome = todayIncome.add(bd);
-                else if (amt instanceof Number n) todayIncome = todayIncome.add(new java.math.BigDecimal(n.toString()));
-            }
-        } catch (Exception ex) {
-            // ignore and keep zero if repo fails
+        // Prepare period range depending on groupBy
+        java.time.LocalDate endDate;
+        java.time.LocalDate startDate;
+
+        if ("day".equalsIgnoreCase(groupBy)) {
+            endDate = (to == null) ? java.time.LocalDate.now() : to.toLocalDate();
+            startDate = (from == null) ? endDate.minusDays(6) : from.toLocalDate();
+        } else if ("month".equalsIgnoreCase(groupBy)) {
+            endDate = (to == null) ? java.time.LocalDate.now() : to.toLocalDate();
+            // default to last 12 months
+            startDate = (from == null) ? endDate.minusMonths(11) : from.toLocalDate();
+            // normalize to first day of month when iterating
+        } else if ("year".equalsIgnoreCase(groupBy)) {
+            endDate = (to == null) ? java.time.LocalDate.now() : to.toLocalDate();
+            // default to last 5 years
+            startDate = (from == null) ? endDate.minusYears(4) : from.toLocalDate();
+        } else {
+            throw new BadRequestException("groupBy ต้องเป็น 'day', 'month' หรือ 'year'");
         }
 
-        // Charts: use hostRevenueSummaryRepository for bookings+revenue per day
-        // default range: last 7 days (including today)
-        java.time.LocalDate endDate = (to == null) ? java.time.LocalDate.now() : to.toLocalDate();
-        java.time.LocalDate startDate = (from == null) ? endDate.minusDays(6) : from.toLocalDate();
+        java.time.LocalDateTime fromDt;
+        java.time.LocalDateTime toDt;
+        if ("month".equalsIgnoreCase(groupBy)) {
+            fromDt = startDate.withDayOfMonth(1).atStartOfDay();
+            toDt = endDate.plusMonths(1).withDayOfMonth(1).atStartOfDay();
+        } else if ("year".equalsIgnoreCase(groupBy)) {
+            fromDt = startDate.withDayOfYear(1).atStartOfDay();
+            toDt = endDate.plusYears(1).withDayOfYear(1).atStartOfDay();
+        } else {
+            fromDt = startDate.atStartOfDay();
+            toDt = endDate.plusDays(1).atStartOfDay();
+        }
 
-        java.time.LocalDateTime fromDt = startDate.atStartOfDay();
-        java.time.LocalDateTime toDt = endDate.plusDays(1).atStartOfDay();
-
-        List<Object[]> rows = hostRevenueSummaryRepository.findRevenueSummaryByDay(ownerId, fromDt, toDt);
-        // Map date -> (revenue, bookings)
+        // Query repository according to groupBy
         java.util.Map<java.time.LocalDate, java.util.Map<String, Object>> map = new java.util.HashMap<>();
-        if (rows != null) {
-            for (Object[] r : rows) {
-                if (r == null || r.length < 3) continue;
-                java.sql.Date d = (java.sql.Date) r[0];
-                java.time.LocalDate ld = d.toLocalDate();
-                java.math.BigDecimal rev = (r[1] == null) ? java.math.BigDecimal.ZERO : (java.math.BigDecimal) r[1];
-                int cnt = (r[2] == null) ? 0 : ((Number) r[2]).intValue();
-                var m = new java.util.HashMap<String, Object>();
-                m.put("rev", rev);
-                m.put("cnt", cnt);
-                map.put(ld, m);
+
+        if ("day".equalsIgnoreCase(groupBy)) {
+            List<Object[]> rows = hostRevenueSummaryRepository.findRevenueSummaryByDay(ownerId, fromDt, toDt);
+            if (rows != null) {
+                for (Object[] r : rows) {
+                    if (r == null || r.length < 3) continue;
+                    java.sql.Date d = (java.sql.Date) r[0];
+                    java.time.LocalDate ld = d.toLocalDate();
+                    java.math.BigDecimal rev = (r[1] == null) ? java.math.BigDecimal.ZERO : (java.math.BigDecimal) r[1];
+                    int cnt = (r[2] == null) ? 0 : ((Number) r[2]).intValue();
+                    var m = new java.util.HashMap<String, Object>();
+                    m.put("rev", rev);
+                    m.put("cnt", cnt);
+                    map.put(ld, m);
+                }
+            }
+        } else if ("month".equalsIgnoreCase(groupBy)) {
+            List<Object[]> rows = hostRevenueSummaryRepository.findRevenueSummaryByMonth(ownerId, fromDt, toDt);
+            if (rows != null) {
+                for (Object[] r : rows) {
+                    if (r == null || r.length < 4) continue;
+                    int yr = ((Number) r[0]).intValue();
+                    int mon = ((Number) r[1]).intValue();
+                    java.time.LocalDate ld = java.time.LocalDate.of(yr, mon, 1);
+                    java.math.BigDecimal rev = (r[2] == null) ? java.math.BigDecimal.ZERO : (java.math.BigDecimal) r[2];
+                    int cnt = (r[3] == null) ? 0 : ((Number) r[3]).intValue();
+                    var m = new java.util.HashMap<String, Object>();
+                    m.put("rev", rev);
+                    m.put("cnt", cnt);
+                    map.put(ld, m);
+                }
+            }
+        } else { // year
+            List<Object[]> rows = hostRevenueSummaryRepository.findRevenueSummaryByYear(ownerId, fromDt, toDt);
+            if (rows != null) {
+                for (Object[] r : rows) {
+                    if (r == null || r.length < 3) continue;
+                    int yr = ((Number) r[0]).intValue();
+                    java.time.LocalDate ld = java.time.LocalDate.of(yr, 1, 1);
+                    java.math.BigDecimal rev = (r[1] == null) ? java.math.BigDecimal.ZERO : (java.math.BigDecimal) r[1];
+                    int cnt = (r[2] == null) ? 0 : ((Number) r[2]).intValue();
+                    var m = new java.util.HashMap<String, Object>();
+                    m.put("rev", rev);
+                    m.put("cnt", cnt);
+                    map.put(ld, m);
+                }
             }
         }
 
         List<com.nangnaidee.backend.dto.HostDashboardResponse.BookingTrendItem> bookingTrend = new java.util.ArrayList<>();
         List<com.nangnaidee.backend.dto.HostDashboardResponse.RevenueDailyItem> revenueDaily = new java.util.ArrayList<>();
 
-        java.time.LocalDate cursor = startDate;
-        while (!cursor.isAfter(endDate)) {
-            var entry = map.get(cursor);
-            int cnt = 0;
-            java.math.BigDecimal rev = java.math.BigDecimal.ZERO;
-            if (entry != null) {
-                cnt = (Integer) entry.get("cnt");
-                rev = (java.math.BigDecimal) entry.get("rev");
+        // Iterate periods: day / month / year
+        if ("day".equalsIgnoreCase(groupBy)) {
+            java.time.LocalDate cursor = startDate;
+            while (!cursor.isAfter(endDate)) {
+                var entry = map.get(cursor);
+                int cnt = 0;
+                java.math.BigDecimal rev = java.math.BigDecimal.ZERO;
+                if (entry != null) {
+                    cnt = (Integer) entry.get("cnt");
+                    rev = (java.math.BigDecimal) entry.get("rev");
+                }
+                bookingTrend.add(new com.nangnaidee.backend.dto.HostDashboardResponse.BookingTrendItem(cursor, cnt));
+                revenueDaily.add(new com.nangnaidee.backend.dto.HostDashboardResponse.RevenueDailyItem(cursor, rev));
+                cursor = cursor.plusDays(1);
             }
-            bookingTrend.add(new com.nangnaidee.backend.dto.HostDashboardResponse.BookingTrendItem(cursor, cnt));
-            revenueDaily.add(new com.nangnaidee.backend.dto.HostDashboardResponse.RevenueDailyItem(cursor, rev));
-            cursor = cursor.plusDays(1);
+        } else if ("month".equalsIgnoreCase(groupBy)) {
+            java.time.LocalDate cursor = startDate.withDayOfMonth(1);
+            java.time.LocalDate last = endDate.withDayOfMonth(1);
+            while (!cursor.isAfter(last)) {
+                var entry = map.get(cursor);
+                int cnt = 0;
+                java.math.BigDecimal rev = java.math.BigDecimal.ZERO;
+                if (entry != null) {
+                    cnt = (Integer) entry.get("cnt");
+                    rev = (java.math.BigDecimal) entry.get("rev");
+                }
+                bookingTrend.add(new com.nangnaidee.backend.dto.HostDashboardResponse.BookingTrendItem(cursor, cnt));
+                revenueDaily.add(new com.nangnaidee.backend.dto.HostDashboardResponse.RevenueDailyItem(cursor, rev));
+                cursor = cursor.plusMonths(1);
+            }
+        } else { // year
+            java.time.LocalDate cursor = startDate.withDayOfYear(1);
+            java.time.LocalDate last = endDate.withDayOfYear(1);
+            while (!cursor.isAfter(last)) {
+                var entry = map.get(cursor);
+                int cnt = 0;
+                java.math.BigDecimal rev = java.math.BigDecimal.ZERO;
+                if (entry != null) {
+                    cnt = (Integer) entry.get("cnt");
+                    rev = (java.math.BigDecimal) entry.get("rev");
+                }
+                bookingTrend.add(new com.nangnaidee.backend.dto.HostDashboardResponse.BookingTrendItem(cursor, cnt));
+                revenueDaily.add(new com.nangnaidee.backend.dto.HostDashboardResponse.RevenueDailyItem(cursor, rev));
+                cursor = cursor.plusYears(1);
+            }
+        }
+
+        // Compute card income: if day -> today's income as before; otherwise sum over period
+        java.math.BigDecimal periodIncome = java.math.BigDecimal.ZERO;
+        if ("day".equalsIgnoreCase(groupBy)) {
+            java.time.LocalDate today = java.time.LocalDate.now();
+            java.time.LocalDateTime todayStart = today.atStartOfDay();
+            java.time.LocalDateTime todayEnd = today.plusDays(1).atStartOfDay();
+            try {
+                var paymentsPage = revenueTransactionRepository.findRevenueTransactions(ownerId, null, null, todayStart, todayEnd, org.springframework.data.domain.PageRequest.of(0, 1000));
+                for (Object[] row : paymentsPage.getContent()) {
+                    if (row == null || row.length < 3) continue;
+                    Object amt = row[2];
+                    if (amt instanceof java.math.BigDecimal bd) periodIncome = periodIncome.add(bd);
+                    else if (amt instanceof Number n) periodIncome = periodIncome.add(new java.math.BigDecimal(n.toString()));
+                }
+            } catch (Exception ex) {
+                // ignore and keep zero if repo fails
+            }
+        } else {
+            // sum values from map
+            for (var e : map.values()) {
+                if (e == null) continue;
+                java.math.BigDecimal rev = (java.math.BigDecimal) e.get("rev");
+                if (rev != null) periodIncome = periodIncome.add(rev);
+            }
         }
 
         com.nangnaidee.backend.dto.HostDashboardResponse.Cards cards = new com.nangnaidee.backend.dto.HostDashboardResponse.Cards(
                 locationsTotal,
                 (int) pending,
                 approved,
-                todayIncome
+                periodIncome
         );
 
         return new com.nangnaidee.backend.dto.HostDashboardResponse(cards, bookingTrend, revenueDaily);

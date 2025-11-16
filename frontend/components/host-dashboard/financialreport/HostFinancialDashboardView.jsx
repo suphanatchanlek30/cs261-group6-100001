@@ -9,21 +9,23 @@ export default function HostFinancialDashboardView() {
   const [data, setData] = useState({ cards: {}, bookingTrend: [], revenueDaily: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [view, setView] = useState('month');
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     const params = (filters.from && filters.to) ? { from: filters.from, to: filters.to } : {};
+    if (view) params.groupBy = view === 'month' ? 'month' : view === 'year' ? 'year' : 'day';
     const res = await getHostDashboard(params);
     if (res.ok) setData(res.data); else setError(res.message || "โหลดข้อมูลไม่สำเร็จ");
     setLoading(false);
   }, [filters.from, filters.to]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, view]);
 
   return (
     <div className="flex flex-col gap-6">
       <DashboardStatCards cards={data.cards} loading={loading} />
-      <IncomeReportChartHost cards={data.cards} bookingTrend={data.bookingTrend} revenueDaily={data.revenueDaily} loading={loading} />
+      <IncomeReportChartHost view={view} setView={setView} cards={data.cards} bookingTrend={data.bookingTrend} revenueDaily={data.revenueDaily} loading={loading} />
     </div>
   );
 }
