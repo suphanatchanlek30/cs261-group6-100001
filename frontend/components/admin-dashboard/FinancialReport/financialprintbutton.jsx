@@ -50,7 +50,7 @@ export default function FinancialPrintButton() {
         };
 
     return (
-        <div className="w-full flex justify-end mt-4">
+        
             <button
                 onClick={handlePrint}
                 disabled={loading}
@@ -61,6 +61,6 @@ export default function FinancialPrintButton() {
                 <AiOutlinePrinter size={18} />
                 {loading ? 'Preparing...' : 'Print Report'}
             </button>
-        </div>
+        
     );
 }

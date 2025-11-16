@@ -6,6 +6,7 @@ import { HiCalendarDays, HiBuildingOffice2 } from "react-icons/hi2";
 import { FaSackDollar } from "react-icons/fa6";
 import IncomeReportChart from "./financialincomereport.jsx";
 import FinancialPrintButton from "./financialprintbutton.jsx";
+import ExportCsvButton from './financialexportcsvbutton.jsx';
 
 import { fetchFinanceSummary } from "../../../services/adminFinanceReportService";
 
@@ -93,8 +94,10 @@ export default function FinancialReportContent() {
       </section>
 
       <IncomeReportChart summary={summary} />
-
-      <FinancialPrintButton />
+      <div className="flex justify-end gap-x-3">
+        <ExportCsvButton />
+        <FinancialPrintButton />
+      </div>
     </div>
   );
 }
