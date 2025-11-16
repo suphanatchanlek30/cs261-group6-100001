@@ -27,8 +27,9 @@ export function useSearchLocations({ q, near, radiusKm, page, size }) {
       if (cancelled) return;
       if (!ok) setErr(message || "โหลดข้อมูลไม่สำเร็จ");
       else {
-        setItems(data.items || []);
-        setTotal(data.total || 0);
+        const filtered = (data.items || []).filter((it) => it?.isActive === true);
+        setItems(filtered);
+        setTotal(filtered.length);
       }
       setLoading(false);
     })();

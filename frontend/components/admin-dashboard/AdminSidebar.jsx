@@ -1,20 +1,22 @@
 "use client";
-
 import SidebarLink from "./SidebarLink";
 import {
   FiUsers, FiMapPin, FiClipboard, FiStar, FiCreditCard,
-  FiChevronLeft, FiChevronRight,
+  FiChevronLeft, FiChevronRight
 } from "react-icons/fi";
+import { LuChartNoAxesCombined } from "react-icons/lu";
+import { GrTransaction } from "react-icons/gr";
 
 export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
   const items = [
-    { label: "Manage Users", href: "/admin/users", icon: <FiUsers /> },
+    { label: "Financial Report", href: "/admin/FinancialReport", icon: <LuChartNoAxesCombined /> },
+    { label: "Review Location", href: "/admin/reviewlocations", icon: <FiClipboard /> },
     { label: "Manage Location", href: "/admin/locations", icon: <FiMapPin /> },
-    { label: "Manage Booking", href: "/admin/bookings", icon: <FiClipboard /> },
     { label: "Manage Review", href: "/admin/reviews", icon: <FiStar /> },
+    { label: "Manage Users", href: "/admin/users", icon: <FiUsers /> },
     { label: "Payments", href: "/admin/payments", icon: <FiCreditCard /> },
-  ];
-
+    {label: "Transaction", href: "/admin/transaction", icon: <GrTransaction /> },
+    ];
   return (
     <aside
       className={[
@@ -24,7 +26,8 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
         "flex flex-col justify-between",
         isCollapsed ? "w-16" : "w-[250px]",
       ].join(" ")}
-    >
+      >
+
       <div className="p-4 space-y-2 flex-1 overflow-y-auto">
         {items.map((it) => (
           <SidebarLink key={it.href} href={it.href} icon={it.icon} collapsed={isCollapsed}>

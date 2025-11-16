@@ -22,6 +22,7 @@ export default function AdminShell({ children }) {
     if (!isAuthenticated()) {
       router.replace("/admin-login?next=/admin/dashboard");
     }
+    router.replace("/admin/FinancialReport")
   }, [router]);
 
   return (

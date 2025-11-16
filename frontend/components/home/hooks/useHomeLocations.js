@@ -32,8 +32,10 @@ export default function useHomeLocations({ province = null, size = 6 }) {
         if (cancelled) return;
 
         if (!ok) throw new Error(message || "โหลดข้อมูลไม่สำเร็จ");
-        setItems(data.items || []);
-        setTotal(Number.isFinite(data.total) ? data.total : (data.items || []).length);
+        // เผื่อกรณี backend เผลอส่งรายการที่ไม่ active มา ให้กรองอีกชั้น
+        const items = (data.items || []).filter((it) => it?.isActive === true);
+        setItems(items);
+        setTotal(Number.isFinite(data.total) ? items.length : items.length);
       } catch (e) {
         if (!cancelled) setErr(e.message || "โหลดข้อมูลไม่สำเร็จ");
       } finally {

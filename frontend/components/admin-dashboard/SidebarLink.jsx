@@ -12,7 +12,7 @@ import { usePathname } from "next/navigation";
  */
 export default function SidebarLink({ href, icon, children, collapsed = false }) {
   const pathname = usePathname();
-  const active = pathname === href || pathname.startsWith(href + "/");
+  const active = pathname === href || pathname.startsWith(href + "/admin/FinancialReport");
 
   return (
     <Link

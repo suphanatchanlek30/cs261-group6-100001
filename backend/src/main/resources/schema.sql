@@ -139,3 +139,51 @@ ALTER TABLE dbo.locations
 -- LOCATION_UNITS
 ALTER TABLE dbo.location_units
     ADD image_public_id NVARCHAR(300) NULL;
+
+-- LOCATION_HOURS
+--เราทําการสร้างตาราง location_hours เพื่อเก็บข้อมูลชั่วโมงการทํางานของสถานที่ต่างๆ ตอนแรกมันไม่มีตารางนี้
+CREATE TABLE dbo.location_hours (
+                                    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                    location_id UNIQUEIDENTIFIER NOT NULL
+                                        FOREIGN KEY REFERENCES dbo.locations(id) ON DELETE CASCADE,
+                                    day_of_week NVARCHAR(10) NOT NULL,
+                                    start_time TIME NOT NULL,
+                                    end_time TIME NOT NULL,
+                                    CONSTRAINT CK_location_hours_day CHECK (day_of_week IN ('MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY')),
+                                    CONSTRAINT CK_location_hours_time CHECK (start_time < end_time)
+);
+
+CREATE INDEX IX_location_hours_location ON dbo.location_hours(location_id);
+CREATE INDEX IX_location_hours_day ON dbo.location_hours(location_id, day_of_week);
+
+-- LOCATION_BLOCKS
+-- ตัวนี้เราสร้าง Table อีกอันจะเอาไว้เก็บข้อมูลบล็อกของสถานที่ และอิงตาม Location ID แบบ Relationship กับตาราง Locations
+CREATE TABLE dbo.location_blocks (
+                                     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                     location_id UNIQUEIDENTIFIER NOT NULL
+                                         FOREIGN KEY REFERENCES dbo.locations(id) ON DELETE CASCADE,
+                                     start_time DATETIME2(0) NOT NULL,
+                                     end_time DATETIME2(0) NOT NULL,
+                                     reason NVARCHAR(500) NULL,
+                                     created_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+                                     CONSTRAINT CK_location_blocks_time CHECK (start_time < end_time)
+);
+
+CREATE INDEX IX_location_blocks_location ON dbo.location_blocks(location_id);
+CREATE INDEX IX_location_blocks_time ON dbo.location_blocks(location_id, start_time, end_time);
+
+-- UNIT_BLOCKS
+-- ตัวนี้เราสร้าง Table อีกอันจะเอาไว้เก็บข้อมูลบล็อกของยูนิตภายในสถานที่นั้นๆ และอิงตาม Unit ID แบบ Relationship กับตาราง Location_Units
+CREATE TABLE dbo.unit_blocks (
+                                 id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                 unit_id UNIQUEIDENTIFIER NOT NULL
+                                     FOREIGN KEY REFERENCES dbo.location_units(id) ON DELETE CASCADE,
+                                 start_time DATETIME2(0) NOT NULL,
+                                 end_time DATETIME2(0) NOT NULL,
+                                 reason NVARCHAR(500) NULL,
+                                 created_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+                                 CONSTRAINT CK_unit_blocks_time CHECK (start_time < end_time)
+);
+
+CREATE INDEX IX_unit_blocks_unit ON dbo.unit_blocks(unit_id);
+CREATE INDEX IX_unit_blocks_time ON dbo.unit_blocks(unit_id, start_time, end_time);

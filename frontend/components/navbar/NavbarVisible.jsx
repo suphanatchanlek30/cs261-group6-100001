@@ -13,7 +13,8 @@ export default function NavbarVisible() {
     pathname === "/login" ||
     pathname === "/register" ||
     pathname === "/admin-login" ||
-    pathname.startsWith("/admin"); // <-- ครอบทุกหน้าใน /admin
+    pathname.startsWith("/admin") || // <-- ครอบทุกหน้าใน /admin
+    pathname.startsWith("/host"); // <-- ครอบทุกหน้าใน /host
 
   if (hideOn) return null;
   return <Navbar />;
