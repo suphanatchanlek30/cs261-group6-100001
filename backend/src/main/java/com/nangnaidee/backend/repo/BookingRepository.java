@@ -60,4 +60,12 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     List<Booking> findActiveOverlapsByUnitId(@Param("unitId") UUID unitId,
                                              @Param("from") LocalDateTime from,
                                              @Param("to") LocalDateTime to);
+
+    /**
+     * Usage Report Queries
+     */
+    
+    // Count bookings in date range
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.createdAt >= :fromDate AND b.createdAt <= :toDate")
+    long countBookingsBetween(@Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);
 }

@@ -7,7 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -46,4 +46,20 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     
     @Query("SELECT u FROM User u JOIN u.roles r WHERE u.isActive = :isActive AND (UPPER(u.fullName) LIKE UPPER(CONCAT('%', :search, '%')) OR UPPER(u.email) LIKE UPPER(CONCAT('%', :search, '%'))) AND UPPER(r.code) = UPPER(:roleCode) ORDER BY u.createdAt DESC")
     Page<User> findByRoleCodeAndIsActiveAndSearch(String roleCode, boolean isActive, String search, Pageable pageable);
+
+    /**
+     * Usage Report Queries
+     */
+    
+    // Count active users in date range
+    @Query("SELECT COUNT(u) FROM User u WHERE u.isActive = true AND u.createdAt <= :toDate")
+    long countActiveUsersUpTo(@Param("toDate") java.time.LocalDateTime toDate);
+    
+    // Count new users in date range  
+    @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :fromDate AND u.createdAt <= :toDate")
+    long countNewUsersBetween(@Param("fromDate") java.time.LocalDateTime fromDate, @Param("toDate") java.time.LocalDateTime toDate);
+    
+    // Count new hosts in date range
+    @Query("SELECT COUNT(DISTINCT u) FROM User u JOIN u.roles r WHERE UPPER(r.code) = 'HOST' AND u.createdAt >= :fromDate AND u.createdAt <= :toDate")
+    long countNewHostsBetween(@Param("fromDate") java.time.LocalDateTime fromDate, @Param("toDate") java.time.LocalDateTime toDate);
 }
