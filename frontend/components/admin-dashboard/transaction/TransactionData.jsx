@@ -1,9 +1,9 @@
-// frontend/components/admin/Transaction.jsx
+// cs261-group6-100001/frontend/components/admin-dashboard/transaction/TransactionData.jsx
 "use client";
 
 import React, { useState, useMemo } from 'react';
 import { FiSearch, FiEye } from 'react-icons/fi';
-// **Path ที่ถูกต้องสำหรับดึง Mock Data**
+// **แก้ไข Import Path ให้ชี้ไปที่แหล่งข้อมูลส่วนกลางของ Admin**
 import { mockData } from '@/components/admin-dashboard/transaction/mockData.js'; 
 
 // ฟังก์ชันสำหรับกำหนดสีและไอคอนตามสถานะ
@@ -36,7 +36,7 @@ const StatusPill = ({ status }) => {
   );
 };
 
-export default function Transaction() {
+export default function TransactionList() {
   const [searchTerm, setSearchTerm] = useState('');
 
   // กรองข้อมูลตามคำค้นหา
@@ -52,11 +52,18 @@ export default function Transaction() {
     );
   }, [searchTerm]);
 
-  // ฟังก์ชันสำหรับจำลองการดูรายละเอียด (ใช้ console.log แทน alert)
+  // ฟังก์ชันสำหรับจำลองการดูรายละเอียด
   const handleView = (id) => {
+    // ใช้ console.log แทน window.alert() ตามกฎของระบบ
     console.log(`[Action] Showing details for Transaction ID: ${id}`);
   };
   
+  // Custom Alert function เนื่องจากห้ามใช้ window.alert()
+  const alert = (message) => {
+    console.log(`[Notification] ${message}`);
+    // For now, we will just log to the console to comply with the rule.
+  }
+
   return (
     <div className="bg-white shadow-xl rounded-lg overflow-hidden border border-gray-100">
       
@@ -134,7 +141,7 @@ export default function Transaction() {
         </table>
       </div>
       
-      {/* Footer / Pagination */}
+      {/* Footer / Pagination (Optional, added a visual style for completeness) */}
       <div className="p-4 sm:px-6 bg-gray-50 flex justify-between items-center text-sm text-gray-600">
         <div>
           Showing <span className="font-semibold">{filteredTransactions.length}</span> out of <span className="font-semibold">{mockData.length}</span> results
