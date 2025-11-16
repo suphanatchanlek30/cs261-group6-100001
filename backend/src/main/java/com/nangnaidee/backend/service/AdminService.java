@@ -15,6 +15,7 @@ import com.nangnaidee.backend.dto.PatchUserStatusRequest;
 import com.nangnaidee.backend.dto.PatchUserStatusResponse;
 import com.nangnaidee.backend.dto.PatchLocationStatusRequest;
 import com.nangnaidee.backend.dto.PatchLocationStatusResponse;
+import com.nangnaidee.backend.dto.UsageReportResponse;
 import com.nangnaidee.backend.exception.*;
 import com.nangnaidee.backend.model.Payment;
 import com.nangnaidee.backend.model.Role;
@@ -22,6 +23,7 @@ import com.nangnaidee.backend.model.User;
 import com.nangnaidee.backend.repo.BookingRepository;
 import com.nangnaidee.backend.repo.LocationRepository;
 import com.nangnaidee.backend.repo.PaymentRepository;
+import com.nangnaidee.backend.repo.ReviewRepository;
 import com.nangnaidee.backend.repo.UserRepository;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -47,6 +54,7 @@ public class AdminService {
     private final PaymentRepository paymentRepository;
     private final LocationRepository locationRepository;
     private final BookingRepository bookingRepository;
+    private final ReviewRepository reviewRepository;
 
     @Transactional
     public GetPaymentResponse getPayments(String authorizationHeader, String status, int page, int size) {
@@ -575,5 +583,79 @@ public class AdminService {
                         loc.isActive()
                 ))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public UsageReportResponse getUsageReport(
+            String authorizationHeader,
+            String fromDate,
+            String toDate
+    ) {
+        // 1) Authn: ตรวจสอบ Bearer token
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+
+        Integer adminUserId;
+        try {
+            adminUserId = jwtTokenProvider.getUserId(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+
+        User admin = userRepository.findById(adminUserId)
+                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
+
+        // 2) Authz: ตรวจสอบว่าเป็น ADMIN
+        Set<String> roleCodes = admin.getRoles().stream()
+                .map(Role::getCode)
+                .collect(Collectors.toSet());
+        if (!roleCodes.contains("ADMIN")) {
+            throw new ForbiddenException("ต้องเป็น ADMIN เท่านั้น");
+        }
+
+        // 3) Parse วันที่
+        LocalDateTime fromDateTime;
+        LocalDateTime toDateTime;
+        
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            
+            if (fromDate == null || fromDate.isBlank()) {
+                // Default: 30 วันที่แล้ว
+                fromDateTime = LocalDate.now().minusDays(30).atStartOfDay();
+            } else {
+                fromDateTime = LocalDate.parse(fromDate, formatter).atStartOfDay();
+            }
+            
+            if (toDate == null || toDate.isBlank()) {
+                // Default: วันนี้
+                toDateTime = LocalDate.now().atTime(LocalTime.MAX);
+            } else {
+                toDateTime = LocalDate.parse(toDate, formatter).atTime(LocalTime.MAX);
+            }
+        } catch (DateTimeParseException e) {
+            throw new BadRequestException("รูปแบบวันที่ไม่ถูกต้อง ใช้ yyyy-MM-dd");
+        }
+
+        if (fromDateTime.isAfter(toDateTime)) {
+            throw new BadRequestException("วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด");
+        }
+
+        // 4) Query ข้อมูล KPI
+        long activeUsers = userRepository.countActiveUsersUpTo(toDateTime);
+        long newUsers = userRepository.countNewUsersBetween(fromDateTime, toDateTime);
+        long bookingsCount = bookingRepository.countBookingsBetween(fromDateTime, toDateTime);
+        long hostsOnboarded = userRepository.countNewHostsBetween(fromDateTime, toDateTime);
+        long reviewsCount = reviewRepository.countReviewsBetween(fromDateTime, toDateTime);
+
+        return new UsageReportResponse(
+                activeUsers,
+                newUsers,
+                bookingsCount,
+                hostsOnboarded,
+                reviewsCount
+        );
     }
 }
