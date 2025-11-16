@@ -106,4 +106,12 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
             @Param("minRating") Integer minRating,
             Pageable pageable
     );
+
+    /**
+     * Usage Report Queries
+     */
+    
+    // Count reviews in date range
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.createdAt >= :fromDate AND r.createdAt <= :toDate")
+    long countReviewsBetween(@Param("fromDate") java.time.LocalDateTime fromDate, @Param("toDate") java.time.LocalDateTime toDate);
 }
