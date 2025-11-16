@@ -16,8 +16,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 // Month labels for aggregation
 const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-export default function IncomeReportChartHost({ cards = {}, bookingTrend = [], revenueDaily = [], loading }) {
-  const [view, setView] = useState('month');
+export default function IncomeReportChartHost({ view = 'month', setView = () => {}, cards = {}, bookingTrend = [], revenueDaily = [], loading }) {
 
   const { labels, revenueData } = useMemo(() => buildAggregated(view, revenueDaily, cards), [view, revenueDaily, cards]);
 
@@ -78,8 +77,8 @@ export default function IncomeReportChartHost({ cards = {}, bookingTrend = [], r
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-slate-800">Income Report</h2>
         <div className="border border-[#E9D5FF] rounded-md flex overflow-hidden">
-          <button onClick={()=>setView('month')} className={`px-3 py-1 text-sm cursor-pointer transition-colors ${view==='month'? 'bg-[#E9D5FF] font-semibold text-violet-700':'bg-transparent text-slate-700'}`}>month</button>
-          <button onClick={()=>setView('year')} className={`px-3 py-1 text-sm cursor-pointer transition-colors ${view==='year'? 'bg-[#E9D5FF] font-semibold text-violet-700':'bg-transparent text-slate-700'}`}>year</button>
+          <button onClick={() => setView('month')} className={`px-3 py-1 text-sm cursor-pointer transition-colors ${view==='month'? 'bg-[#E9D5FF] font-semibold text-violet-700':'bg-transparent text-slate-700'}`}>month</button>
+          <button onClick={() => setView('year')} className={`px-3 py-1 text-sm cursor-pointer transition-colors ${view==='year'? 'bg-[#E9D5FF] font-semibold text-violet-700':'bg-transparent text-slate-700'}`}>year</button>
         </div>
       </div>
       <div style={{ height: '400px' }}>

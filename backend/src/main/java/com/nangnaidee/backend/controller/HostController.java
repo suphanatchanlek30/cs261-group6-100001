@@ -229,9 +229,10 @@ public class HostController {
     public ResponseEntity<com.nangnaidee.backend.dto.HostDashboardResponse> getDashboard(
             @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime from,
-            @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime to
+            @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime to,
+            @RequestParam(value = "groupBy", required = false, defaultValue = "day") String groupBy
     ) {
-        var res = hostService.getDashboard(authorizationHeader, from, to);
+        var res = hostService.getDashboard(authorizationHeader, from, to, groupBy);
         return ResponseEntity.ok(res);
     }
 

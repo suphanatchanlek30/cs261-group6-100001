@@ -1,11 +1,12 @@
 // services/hostDashboardService.js
 import axios from "./axiosInstance";
 
-export async function getHostDashboard({ from, to } = {}) {
+export async function getHostDashboard({ from, to, groupBy } = {}) {
   try {
     const params = {};
     if (from) params.from = ensureDateTime(from, false);
     if (to) params.to = ensureDateTime(to, true);
+    if (groupBy) params.groupBy = groupBy;
     const res = await axios.get("/hosts/dashboard", { params, validateStatus: () => true });
     if (res.status === 200) {
       const raw = res.data || {};
