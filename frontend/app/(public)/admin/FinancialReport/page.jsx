@@ -1,5 +1,5 @@
-// app/(public)/admin/FinancialReport/page.jsx
-"use client";
+// frontend/app/(public)/admin/transaction/page.jsx
+
 import FinancialReportContent from "@/components/admin-dashboard/FinancialReport/financialcontent";
 
 export default function AdminFinancialReportPage() {
