@@ -3,7 +3,7 @@ import { adminMenuItems } from '@/components/admin-dashboard/transaction/Transac
 import SidebarLink from "./SidebarLink";
 import {
   FiUsers, FiMapPin, FiClipboard, FiStar, FiCreditCard,
-  FiChevronLeft, FiChevronRight,
+  FiChevronLeft, FiChevronRight,Iolayers
 } from "react-icons/fi";
 import { LuChartNoAxesCombined } from "react-icons/lu";
 
@@ -15,7 +15,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
     { label: "Manage Review", href: "/admin/reviews", icon: <FiStar /> },
     { label: "Payments", href: "/admin/payments", icon: <FiCreditCard /> },
     { label: "Financial Report", href: "/admin/FinancialReport", icon: <LuChartNoAxesCombined /> },
-   {label: "Transaction", href: "/admin/transaction", icon: <LuChartNoAxesCombined /> },
+   {label: "Transaction", href: "/admin/transaction", icon: <Iolayers /> },
     ];
   return (
     <aside
@@ -26,7 +26,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
         "flex flex-col justify-between",
         isCollapsed ? "w-16" : "w-[250px]",
       ].join(" ")}
-    >
+
       <div className="p-4 space-y-2 flex-1 overflow-y-auto">
         {items.map((it) => (
           <SidebarLink key={it.href} href={it.href} icon={it.icon} collapsed={isCollapsed}>
