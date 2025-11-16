@@ -1,8 +1,8 @@
 // components/admin-dashboard/FinancialReport/financialincomereport.jsx
 "use client";
 
-import React, { useState } from 'react';
-import { Bar } from 'react-chartjs-2';
+import React, { useMemo, useState } from "react";
+import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,191 +11,216 @@ import {
   Title,
   Tooltip,
   Legend,
-} from 'chart.js';
+} from "chart.js";
 
-// 1. ลงทะเบียน Component ที่จำเป็นสำหรับ Chart.js
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+import {
+  fetchFinanceSummary,      // ถ้าจะใช้ซ้ำภายหลังได้
+  fetchFinanceDashboard,    // ใช้สำหรับ view=year
+} from "../../../services/adminFinanceReportService";
 
-// --- 2. ข้อมูลจำลอง (Data) ---
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-// ข้อมูลสำหรับมุมมองรายปี (Year View)
-const yearLabels = ['2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025'];
-const yearData = {
-    labels: yearLabels,
-    datasets: [
-        {
-            label: 'QQ Co-Op',
-            data: [25000, 43000, 28000, 8000, 15000, 20000, 10000, 32000, 55000, 37000], 
-            backgroundColor: '#8B5CF6', 
-            hoverBackgroundColor: '#8B5CF6',
-        },
-        {
-            label: 'The Meal Co-Op',
-            data: [22000, 53000, 10000, 10500, 10000, 10000, 25000, 20000, 48000, 41000], 
-            backgroundColor: '#EF4444', 
-            hoverBackgroundColor: '#EF4444',
-        },
-    ],
-};
+const monthLabels = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
-// ข้อมูลสำหรับมุมมองรายเดือน (Month View)
-const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const monthData = {
+// summary.groupBy = MONTH
+function buildMonthChartData(summary) {
+  if (!summary || !Array.isArray(summary.buckets)) return null;
+
+  const revenueByMonth = new Array(12).fill(0);
+
+  summary.buckets.forEach((bucket) => {
+    if (!bucket.periodStart) return;
+    const monthIndex = parseInt(bucket.periodStart.substring(5, 7), 10) - 1;
+    if (monthIndex >= 0 && monthIndex < 12) {
+      revenueByMonth[monthIndex] = bucket.revenue ?? 0;
+    }
+  });
+
+  return {
     labels: monthLabels,
     datasets: [
-        {
-            label: 'QQ Co-Op',
-            data: [3500, 6000, 10000, 7000, 3000, 2500, 3200, 5000, 3800, 7500, 12000, 8000], 
-            backgroundColor: '#8B5CF6',
-            hoverBackgroundColor: '#8B5CF6',
-        },
-        {
-            label: 'The Meal Co-Op',
-            data: [3000, 5300, 11500, 3000, 2500, 3000, 3000, 3000, 5000, 5000, 10500, 9200], 
-            backgroundColor: '#EF4444',
-            hoverBackgroundColor: '#EF4444',
-        },
+      {
+        label: "Total Revenue",
+        data: revenueByMonth,
+        backgroundColor: "#8B5CF6",
+        hoverBackgroundColor: "#8B5CF6",
+      },
     ],
-};
+  };
+}
 
+function buildYearChartData(dashboard) {
+  if (!dashboard || !Array.isArray(dashboard.years)) return null;
 
-// 3. กำหนด Options สำหรับ Bar Chart
-const commonChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false, // ตั้งเป็น false เพื่อควบคุมขนาดได้ง่ายขึ้น
-  plugins: {
-    legend: {
-      position: 'bottom', 
-      labels: {
-        usePointStyle: true,
-        padding: 20
-      }
-    },
-    tooltip: {
-      // แสดง Tooltip ตามรูปภาพ (ตัวอย่าง 2022 และ Jul 2025)
-      callbacks: {
-        label: function(context) {
-          let label = context.dataset.label || '';
-          if (label) {
-            label += ': ';
-          }
-          if (context.parsed.y !== null) {
-            // เพิ่มสัญลักษณ์ B (บาท) ข้างหน้าตัวเลข
-            label += 'B' + context.parsed.y.toLocaleString();
-          }
-          return label;
-        }
-      }
-    }
-  }
-};
+  const labels = dashboard.years.map((y) => String(y.year));
+  const incomes = dashboard.years.map((y) => y.income ?? 0);
 
+  return {
+    labels,
+    datasets: [
+      {
+        label: "Total Revenue",
+        data: incomes,
+        backgroundColor: "#8B5CF6",
+        hoverBackgroundColor: "#8B5CF6",
+      },
+    ],
+  };
+}
 
-// 4. Component หลัก
-export default function IncomeReportChart() {
-  const [chartView, setChartView] = useState('month'); // State: 'month' หรือ 'year'
-  
-  // เลือกข้อมูลตาม State
-  const data = chartView === 'year' ? yearData : monthData;
-    const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        elements: { bar: { borderRadius: 4, borderSkipped: 'bottom' } },
-        scales: {
-            y: {
-                beginAtZero: true,
-                max: chartView === 'year' ? 55000 : 12000,
-                afterBuildTicks: (axis) => {
-                    if (chartView === 'year') {
-                        axis.ticks = [];
-                        const customYearTicks = [0, 10000, 25000, 40000, 55000];
-                        customYearTicks.forEach(tickValue => {
-                            axis.ticks.push({
-                                value: tickValue,
-                                label: tickValue === 0 ? '0' : tickValue / 1000 + 'k'
-                            });
-                        });
-                    }
-                    if (chartView === 'month') {
-                        axis.ticks = [];
-                        const customMonthTicks = [0, 3000, 6000, 9000, 12000];
-                         customMonthTicks.forEach(tickValue => {
-                            axis.ticks.push({
-                                value: tickValue,
-                                label: tickValue === 0 ? '0' : tickValue / 1000 + 'k'
-                            });
-                        });
-                    }
-                },
-                ticks: {},
-                grid: { drawTicks: false, borderDash: [2, 3] },
-                border: { display: false },
-            },
-            x: {
-                grid: { display: false },
-                border: { display: false },
-            }
+export default function IncomeReportChart({ summary }) {
+  const [chartView, setChartView] = useState("month");
+  const [yearDashboard, setYearDashboard] = useState(null);
+  const [loadingYear, setLoadingYear] = useState(false);
+  const [error, setError] = useState("");
+
+  const monthChartData = useMemo(
+    () => buildMonthChartData(summary),
+    [summary]
+  );
+  const yearChartData = useMemo(
+    () => buildYearChartData(yearDashboard),
+    [yearDashboard]
+  );
+
+  const chartData = chartView === "year" ? yearChartData : monthChartData;
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    elements: { bar: { borderRadius: 4, borderSkipped: "bottom" } },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback(value) {
+            if (value === 0) return "0";
+            return value / 1000 + "k";
+          },
         },
-        plugins: {
-            legend: {
-                position: 'bottom',
-                align: 'center',
-                labels:{
-                    usePointStyle: true,
-                    pointStyle: 'circle',
-                    padding: 20,
-                    boxWidth: 8,
-                },
-            },
-            tooltip: {enabled: true,
-                mode: 'index',
-                intersect: false,
-                backgroundColor: '#f2e7feff', 
-                titleColor: '#333333',       
-                bodyColor: '#333333',        
-                padding: 10,
-                displayColors: true,
-                usePointStyle: true,
-                callbacks: { /* ... */ }}
-        }
-    };
+        grid: { drawTicks: false, borderDash: [2, 3] },
+        border: { display: false },
+      },
+      x: {
+        grid: { display: false },
+        border: { display: false },
+      },
+    },
+    plugins: {
+      legend: {
+        position: "bottom",
+        align: "center",
+        labels: {
+          usePointStyle: true,
+          pointStyle: "circle",
+          padding: 20,
+          boxWidth: 8,
+        },
+      },
+      tooltip: {
+        enabled: true,
+        mode: "index",
+        intersect: false,
+        backgroundColor: "#f2e7feff",
+        titleColor: "#333333",
+        bodyColor: "#333333",
+        padding: 10,
+        displayColors: true,
+        usePointStyle: true,
+        callbacks: {
+          label(context) {
+            let label = context.dataset.label || "";
+            if (label) label += ": ";
+            if (context.parsed.y != null) {
+              label += "฿" + context.parsed.y.toLocaleString();
+            }
+            return label;
+          },
+        },
+      },
+    },
+  };
 
-    return (
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-            {/* Header และปุ่มสลับมุมมอง */}
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-slate-800">Income Report</h2>
-                <div className="border border-[#E9D5FF] rounded-md flex overflow-hidden">
-                    <button 
-                        onClick={() => setChartView('month')} 
-                        className={`px-3 py-1 text-sm cursor-pointer transition-colors ${
-                            chartView === 'month' ? 'bg-[#E9D5FF] font-semibold text-violet-700' : 'bg-transparent text-slate-700'
-                        }`}
-                    >
-                        month
-                    </button>
-                    <button 
-                        onClick={() => setChartView('year')} 
-                        className={`px-3 py-1 text-sm cursor-pointer transition-colors ${
-                            chartView === 'year' ? 'bg-[#E9D5FF] font-semibold text-violet-700' : 'bg-transparent text-slate-700'
-                        }`}
-                    >
-                        year
-                    </button>
-                </div>
-            </div>
+  const handleChangeView = async (view) => {
+    setChartView(view);
 
-            {/* Bar Chart Wrapper */}
-            <div style={{ height: '400px' }}>
-                <Bar data={data} options={chartOptions} />
-            </div>
+    if (view === "year" && !yearDashboard) {
+      setLoadingYear(true);
+      setError("");
+
+      const res = await fetchFinanceDashboard({ view: "year" });
+
+      if (res.ok) {
+        setYearDashboard(res.data);
+      } else {
+        setError(res.message || "ไม่สามารถโหลดข้อมูลรายปีได้");
+      }
+
+      setLoadingYear(false);
+    }
+  };
+
+  return (
+    <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+      {/* Header + ปุ่มสลับ month/year */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold text-slate-800">Income Report</h2>
+        <div className="border border-[#E9D5FF] rounded-md flex overflow-hidden">
+          <button
+            onClick={() => handleChangeView("month")}
+            className={`px-3 py-1 text-sm cursor-pointer transition-colors ${
+              chartView === "month"
+                ? "bg-[#E9D5FF] font-semibold text-violet-700"
+                : "bg-transparent text-slate-700"
+            }`}
+          >
+            month
+          </button>
+          <button
+            onClick={() => handleChangeView("year")}
+            className={`px-3 py-1 text-sm cursor-pointer transition-colors ${
+              chartView === "year"
+                ? "bg-[#E9D5FF] font-semibold text-violet-700"
+                : "bg-transparent text-slate-700"
+            }`}
+          >
+            year
+          </button>
         </div>
-    );
+      </div>
+
+      {error && (
+        <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div style={{ height: "400px" }}>
+        {!chartData ? (
+          <div className="flex h-full items-center justify-center text-sm text-slate-500">
+            {chartView === "year"
+              ? loadingYear
+                ? "Loading year data..."
+                : "No year data"
+              : "No month data"}
+          </div>
+        ) : (
+          <Bar data={chartData} options={chartOptions} />
+        )}
+      </div>
+    </div>
+  );
 }
