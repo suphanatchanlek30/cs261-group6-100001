@@ -21,7 +21,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -75,11 +77,26 @@ public class AdminTransactionService {
         LocalDateTime from = null;
         LocalDateTime to = null;
         try {
-            if (fromStr != null && !fromStr.isBlank()) from = LocalDateTime.parse(fromStr);
-        } catch (Exception ignored) {}
+            if (fromStr != null && !fromStr.isBlank()) {
+                // Parse YYYY-MM-DD format to LocalDateTime
+                from = LocalDate.parse(fromStr, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay();
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("รูปแบบวันที่ 'from' ไม่ถูกต้อง ใช้ yyyy-MM-dd");
+        }
         try {
-            if (toStr != null && !toStr.isBlank()) to = LocalDateTime.parse(toStr);
-        } catch (Exception ignored) {}
+            if (toStr != null && !toStr.isBlank()) {
+                // Parse YYYY-MM-DD format to LocalDateTime (end of day)
+                to = LocalDate.parse(toStr, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atTime(23, 59, 59);
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("รูปแบบวันที่ 'to' ไม่ถูกต้อง ใช้ yyyy-MM-dd");
+        }
+        
+        // Validate date range
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new IllegalArgumentException("วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด");
+        }
 
         // Load bookings (sorted latest first)
         List<Booking> all = bookingRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
