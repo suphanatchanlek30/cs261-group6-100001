@@ -1,27 +1,35 @@
 package com.nangnaidee.backend.controller;
 
-import com.nangnaidee.backend.dto.UsageReportResponse;
-import com.nangnaidee.backend.service.AdminService;
-import com.nangnaidee.backend.repo.PaymentRepository;
-import com.nangnaidee.backend.config.JwtTokenProvider;
-import com.nangnaidee.backend.repo.UserRepository;
-import com.nangnaidee.backend.model.User;
-import com.nangnaidee.backend.exception.UnauthorizedException;
-import com.nangnaidee.backend.exception.ForbiddenException;
-import io.jsonwebtoken.JwtException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
+import java.io.ByteArrayOutputStream;
+import java.io.StringWriter;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.io.StringWriter;
-import java.io.ByteArrayOutputStream;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.nangnaidee.backend.config.JwtTokenProvider;
+import com.nangnaidee.backend.dto.AdminFinanceDashboardResponse;
+import com.nangnaidee.backend.dto.FinanceSummaryResponse;
+import com.nangnaidee.backend.dto.UsageReportResponse;
+import com.nangnaidee.backend.exception.ForbiddenException;
+import com.nangnaidee.backend.exception.UnauthorizedException;
+import com.nangnaidee.backend.model.User;
+import com.nangnaidee.backend.repo.PaymentRepository;
+import com.nangnaidee.backend.repo.UserRepository;
+import com.nangnaidee.backend.service.AdminService;
+
+import io.jsonwebtoken.JwtException;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/admin/reports")
@@ -41,6 +49,28 @@ public class AdminReportController {
     ) {
         UsageReportResponse response = adminService.getUsageReport(authorizationHeader, from, to);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/finance/summary")
+    public ResponseEntity<FinanceSummaryResponse> getFinanceSummary(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false, name = "groupBy") String groupBy
+    ) {
+        FinanceSummaryResponse response = adminService.getFinanceSummary(authorizationHeader, from, to, groupBy);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/finance/dashboard")
+    public ResponseEntity<AdminFinanceDashboardResponse> getFinanceDashboard(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false) String view // month | year
+    ) {
+        AdminFinanceDashboardResponse resp = adminService.getFinanceDashboard(authorizationHeader, from, to, view);
+        return ResponseEntity.ok(resp);
     }
 
     @GetMapping("/export")
