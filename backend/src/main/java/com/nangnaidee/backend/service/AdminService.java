@@ -16,6 +16,10 @@ import com.nangnaidee.backend.dto.PatchUserStatusResponse;
 import com.nangnaidee.backend.dto.PatchLocationStatusRequest;
 import com.nangnaidee.backend.dto.PatchLocationStatusResponse;
 import com.nangnaidee.backend.dto.UsageReportResponse;
+import com.nangnaidee.backend.dto.FinanceSummaryResponse;
+import com.nangnaidee.backend.dto.FinanceSummaryBucket;
+import com.nangnaidee.backend.dto.AdminFinanceDashboardResponse;
+import java.math.BigDecimal;
 import com.nangnaidee.backend.exception.*;
 import com.nangnaidee.backend.model.Payment;
 import com.nangnaidee.backend.model.Role;
@@ -657,5 +661,221 @@ public class AdminService {
                 hostsOnboarded,
                 reviewsCount
         );
+    }
+
+    @Transactional(readOnly = true)
+    public FinanceSummaryResponse getFinanceSummary(
+            String authorizationHeader,
+            String fromDate,
+            String toDate,
+            String groupBy
+    ) {
+        // Authn + Authz (reuse pattern)
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+        Integer adminUserId;
+        try {
+            adminUserId = jwtTokenProvider.getUserId(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ");
+        }
+        User admin = userRepository.findById(adminUserId)
+                .orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
+        Set<String> roleCodes = admin.getRoles().stream().map(Role::getCode).collect(Collectors.toSet());
+        if (!roleCodes.contains("ADMIN")) {
+            throw new ForbiddenException("ต้องเป็น ADMIN เท่านั้น");
+        }
+
+        // Parse date range
+        LocalDateTime fromDateTime;
+        LocalDateTime toDateTime;
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            if (fromDate == null || fromDate.isBlank()) {
+                fromDateTime = LocalDate.now().minusDays(30).atStartOfDay();
+            } else {
+                fromDateTime = LocalDate.parse(fromDate, formatter).atStartOfDay();
+            }
+            if (toDate == null || toDate.isBlank()) {
+                toDateTime = LocalDate.now().atTime(LocalTime.MAX);
+            } else {
+                toDateTime = LocalDate.parse(toDate, formatter).atTime(LocalTime.MAX);
+            }
+        } catch (DateTimeParseException e) {
+            throw new BadRequestException("รูปแบบวันที่ไม่ถูกต้อง ใช้ yyyy-MM-dd");
+        }
+        if (fromDateTime.isAfter(toDateTime)) {
+            throw new BadRequestException("วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด");
+        }
+
+        String gb = (groupBy == null || groupBy.isBlank()) ? "DAY" : groupBy.trim().toUpperCase();
+        if (!gb.equals("DAY") && !gb.equals("WEEK") && !gb.equals("MONTH")) {
+            throw new BadRequestException("groupBy ต้องเป็น day, week หรือ month");
+        }
+
+        List<FinanceSummaryBucket> buckets;
+        if (gb.equals("MONTH")) {
+            // Monthly aggregation respecting provided range (may cross years)
+            var rows = paymentRepository.findApprovedMonthlyRevenueRange(fromDateTime, toDateTime);
+            java.util.Map<String, Object[]> rowMap = rows.stream().collect(Collectors.toMap(
+                    r -> ((Number) r[0]).intValue() + "-" + ((Number) r[1]).intValue(),
+                    r -> r
+            ));
+            java.time.YearMonth startYm = java.time.YearMonth.from(fromDateTime);
+            java.time.YearMonth endYm = java.time.YearMonth.from(toDateTime);
+            java.util.List<FinanceSummaryBucket> monthBuckets = new java.util.ArrayList<>();
+            java.time.YearMonth cursor = startYm;
+            while (!cursor.isAfter(endYm)) {
+                String key = cursor.getYear() + "-" + cursor.getMonthValue();
+                Object[] row = rowMap.get(key);
+                LocalDate start = cursor.atDay(1);
+                LocalDate end = cursor.atEndOfMonth();
+                BigDecimal revenue = row==null?BigDecimal.ZERO:(row[2] instanceof BigDecimal ? (BigDecimal) row[2] : new BigDecimal(row[2].toString()));
+                Long paymentsCount = row==null?0L: ((Number) row[3]).longValue();
+                Long bookingsCount = row==null?0L: ((Number) row[4]).longValue();
+                monthBuckets.add(new FinanceSummaryBucket(start, end, revenue, paymentsCount, bookingsCount));
+                cursor = cursor.plusMonths(1);
+            }
+            buckets = monthBuckets;
+        } else if (gb.equals("DAY")) {
+            buckets = paymentRepository.findApprovedDailyRevenue(fromDateTime, toDateTime).stream()
+                .map(row -> {
+                LocalDate day = ((java.sql.Date) row[0]).toLocalDate();
+                BigDecimal revenue = (row[1] instanceof BigDecimal) ? (BigDecimal) row[1] : new BigDecimal(row[1].toString());
+                Long paymentsCount = ((Number) row[2]).longValue();
+                Long bookingsCount = ((Number) row[3]).longValue();
+                return new FinanceSummaryBucket(day, day, revenue, paymentsCount, bookingsCount);
+                })
+                .toList();
+        } else { // WEEK
+            buckets = paymentRepository.findApprovedWeeklyRevenue(fromDateTime, toDateTime).stream()
+                .map(row -> {
+                int year = ((Number) row[0]).intValue();
+                int week = ((Number) row[1]).intValue();
+                BigDecimal revenue = (row[2] instanceof BigDecimal) ? (BigDecimal) row[2] : new BigDecimal(row[2].toString());
+                Long paymentsCount = ((Number) row[3]).longValue();
+                Long bookingsCount = ((Number) row[4]).longValue();
+                java.time.temporal.WeekFields wf = java.time.temporal.WeekFields.ISO;
+                LocalDate start = LocalDate.of(year, 1, 4) // ensure week-based calculation
+                    .with(wf.weekOfWeekBasedYear(), week)
+                    .with(wf.dayOfWeek(), 1);
+                LocalDate end = start.plusDays(6);
+                return new FinanceSummaryBucket(start, end, revenue, paymentsCount, bookingsCount);
+                })
+                .toList();
+        }
+
+        BigDecimal totalRevenue = buckets.stream()
+                .map(FinanceSummaryBucket::getRevenue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long totalPayments = buckets.stream().mapToLong(FinanceSummaryBucket::getPaymentsCount).sum();
+        long totalBookings = buckets.stream().mapToLong(FinanceSummaryBucket::getBookingsCount).sum();
+
+        return new FinanceSummaryResponse(
+                fromDateTime.toLocalDate(),
+                toDateTime.toLocalDate(),
+                gb,
+                "THB",
+                totalRevenue,
+                totalPayments,
+                totalBookings,
+                buckets
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public AdminFinanceDashboardResponse getFinanceDashboard(
+            String authorizationHeader,
+            String from,
+            String to,
+            String view
+    ) {
+        // Authn/Authz reuse
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("ต้องส่งโทเคนแบบ Bearer");
+        }
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+        Integer adminUserId;
+        try { adminUserId = jwtTokenProvider.getUserId(token); } catch (JwtException | IllegalArgumentException e) { throw new UnauthorizedException("โทเคนไม่ถูกต้องหรือหมดอายุ"); }
+        User admin = userRepository.findById(adminUserId).orElseThrow(() -> new UnauthorizedException("ไม่พบผู้ใช้"));
+        Set<String> roleCodes = admin.getRoles().stream().map(Role::getCode).collect(Collectors.toSet());
+        if (!roleCodes.contains("ADMIN")) throw new ForbiddenException("ต้องเป็น ADMIN เท่านั้น");
+
+        // Parse dates (optional, use for limiting totals if provided)
+        LocalDateTime fromDateTime; LocalDateTime toDateTime;
+        try {
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            fromDateTime = (from==null||from.isBlank()) ? LocalDate.now().withDayOfMonth(1).atStartOfDay() : LocalDate.parse(from, fmt).atStartOfDay();
+            toDateTime = (to==null||to.isBlank()) ? LocalDate.now().atTime(LocalTime.MAX) : LocalDate.parse(to, fmt).atTime(LocalTime.MAX);
+        } catch (DateTimeParseException ex){ throw new BadRequestException("รูปแบบวันที่ไม่ถูกต้อง ใช้ yyyy-MM-dd"); }
+        if (fromDateTime.isAfter(toDateTime)) throw new BadRequestException("วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด");
+
+        String vw = (view==null||view.isBlank())?"month":view.trim().toLowerCase();
+        if (!vw.equals("month") && !vw.equals("year")) throw new BadRequestException("view ต้องเป็น month หรือ year");
+
+        // Cards
+        long totalBookings = bookingRepository.countBookingsBetween(fromDateTime, toDateTime);
+        // Revenue approved in range
+        BigDecimal totalIncome = paymentRepository.findApprovedDailyRevenue(fromDateTime, toDateTime).stream()
+                .map(r -> (r[1] instanceof BigDecimal)?(BigDecimal) r[1]: new BigDecimal(r[1].toString()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long activeLocations = locationRepository.count(); // หรือ filter active เท่านั้นถ้ามีฟิลด์ isActive
+        // If Location has isActive boolean, we can refine: locationRepository.countByIsActiveTrue() (add method if needed)
+
+        AdminFinanceDashboardResponse.DashboardCards cards = new AdminFinanceDashboardResponse.DashboardCards(
+                totalBookings,
+                totalIncome,
+                activeLocations
+        );
+
+        AdminFinanceDashboardResponse response = new AdminFinanceDashboardResponse();
+        response.setCards(cards);
+        response.setView(vw);
+
+        if (vw.equals("month")) {
+            int targetYear = fromDateTime.getYear();
+            response.setYear(targetYear);
+            // Current year buckets
+            var currentRows = paymentRepository.findApprovedMonthlyTotals(targetYear);
+            // Previous year for comparison
+            var prevRows = paymentRepository.findApprovedMonthlyRevenueSimple(targetYear - 1);
+            java.util.Map<Integer, BigDecimal> prevMap = prevRows.stream().collect(Collectors.toMap(
+                    r -> ((Number) r[0]).intValue(),
+                    r -> (r[1] instanceof BigDecimal)?(BigDecimal) r[1]: new BigDecimal(r[1].toString())
+            ));
+            java.util.Map<Integer, Object[]> curMap = currentRows.stream().collect(Collectors.toMap(
+                    r -> ((Number) r[0]).intValue(),
+                    r -> r
+            ));
+            List<AdminFinanceDashboardResponse.MonthIncomeBucket> monthBuckets = java.util.stream.IntStream.rangeClosed(1,12)
+                    .mapToObj(m -> {
+                        Object[] row = curMap.get(m);
+                        BigDecimal income = row==null?BigDecimal.ZERO: (row[1] instanceof BigDecimal? (BigDecimal) row[1]: new BigDecimal(row[1].toString()));
+                        Long payments = row==null?0L: ((Number) row[2]).longValue();
+                        Long bookings = row==null?0L: ((Number) row[3]).longValue();
+                        BigDecimal prevIncome = prevMap.getOrDefault(m, BigDecimal.ZERO);
+                        String label = java.time.Month.of(m).name().substring(0,3).toLowerCase();
+                        label = Character.toUpperCase(label.charAt(0)) + label.substring(1); // Jan, Feb
+                        return new AdminFinanceDashboardResponse.MonthIncomeBucket(m, label, income, prevIncome, bookings, payments);
+                    })
+                    .toList();
+            response.setMonths(monthBuckets);
+        } else { // year view
+            int endYear = LocalDate.now().getYear();
+            int startYear = endYear - 4; // last 5 years
+            var rows = paymentRepository.findApprovedYearlyTotals(startYear, endYear);
+            List<AdminFinanceDashboardResponse.YearIncomeBucket> yearBuckets = rows.stream().map(r -> {
+                int yr = ((Number) r[0]).intValue();
+                BigDecimal income = (r[1] instanceof BigDecimal)?(BigDecimal) r[1]: new BigDecimal(r[1].toString());
+                Long payments = ((Number) r[2]).longValue();
+                Long bookings = ((Number) r[3]).longValue();
+                return new AdminFinanceDashboardResponse.YearIncomeBucket(yr, income, bookings, payments);
+            }).toList();
+            response.setYears(yearBuckets);
+        }
+
+        return response;
     }
 }

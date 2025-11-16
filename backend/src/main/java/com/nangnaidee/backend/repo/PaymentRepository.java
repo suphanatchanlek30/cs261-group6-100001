@@ -101,4 +101,83 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
         ORDER BY total_revenue DESC
         """, nativeQuery = true)
     List<Object[]> findYearlyRevenueByLocation();
+
+        /** Daily approved revenue buckets within range */
+        @Query(value = """
+                SELECT CAST(p.created_at AS DATE) as bucket_date,
+                             COALESCE(SUM(p.amount),0) as revenue,
+                             COUNT(*) as payments_count,
+                             COUNT(DISTINCT b.id) as bookings_count
+                FROM payments p
+                JOIN bookings b ON b.id = p.booking_id
+                WHERE p.status = 'APPROVED'
+                    AND p.created_at >= :fromDate AND p.created_at <= :toDate
+                GROUP BY CAST(p.created_at AS DATE)
+                ORDER BY bucket_date ASC
+                """, nativeQuery = true)
+        List<Object[]> findApprovedDailyRevenue(@Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);
+
+        /** Weekly approved revenue buckets (ISO week) within range */
+        @Query(value = """
+                SELECT YEAR(p.created_at) as yr,
+                             DATEPART(ISO_WEEK, p.created_at) as wk,
+                             COALESCE(SUM(p.amount),0) as revenue,
+                             COUNT(*) as payments_count,
+                             COUNT(DISTINCT b.id) as bookings_count
+                FROM payments p
+                JOIN bookings b ON b.id = p.booking_id
+                WHERE p.status = 'APPROVED'
+                    AND p.created_at >= :fromDate AND p.created_at <= :toDate
+                GROUP BY YEAR(p.created_at), DATEPART(ISO_WEEK, p.created_at)
+                ORDER BY yr ASC, wk ASC
+                """, nativeQuery = true)
+        List<Object[]> findApprovedWeeklyRevenue(@Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);
+
+        /** Monthly total approved revenue for a given year */
+        @Query(value = """
+            SELECT MONTH(p.created_at) as mth, COALESCE(SUM(p.amount),0) as revenue, COUNT(*) as payments_count, COUNT(DISTINCT b.id) as bookings_count
+            FROM payments p
+            JOIN bookings b ON b.id = p.booking_id
+            WHERE p.status='APPROVED' AND YEAR(p.created_at)=:year
+            GROUP BY MONTH(p.created_at)
+            ORDER BY mth ASC
+            """, nativeQuery = true)
+        List<Object[]> findApprovedMonthlyTotals(@Param("year") int year);
+
+        /** Monthly total approved revenue for previous year (comparison) */
+        @Query(value = """
+            SELECT MONTH(p.created_at) as mth, COALESCE(SUM(p.amount),0) as revenue
+            FROM payments p
+            WHERE p.status='APPROVED' AND YEAR(p.created_at)=:year
+            GROUP BY MONTH(p.created_at)
+            ORDER BY mth ASC
+            """, nativeQuery = true)
+        List<Object[]> findApprovedMonthlyRevenueSimple(@Param("year") int year);
+
+        /** Yearly totals (Approved) between range of years */
+        @Query(value = """
+            SELECT YEAR(p.created_at) as yr, COALESCE(SUM(p.amount),0) as revenue, COUNT(*) as payments_count, COUNT(DISTINCT b.id) as bookings_count
+            FROM payments p
+            JOIN bookings b ON b.id = p.booking_id
+            WHERE p.status='APPROVED' AND YEAR(p.created_at) BETWEEN :startYear AND :endYear
+            GROUP BY YEAR(p.created_at)
+            ORDER BY yr ASC
+            """, nativeQuery = true)
+        List<Object[]> findApprovedYearlyTotals(@Param("startYear") int startYear, @Param("endYear") int endYear);
+
+        /** Monthly approved revenue range (supports crossing years) */
+        @Query(value = """
+                SELECT YEAR(p.created_at) as yr,
+                             MONTH(p.created_at) as mth,
+                             COALESCE(SUM(p.amount),0) as revenue,
+                             COUNT(*) as payments_count,
+                             COUNT(DISTINCT b.id) as bookings_count
+                FROM payments p
+                JOIN bookings b ON b.id = p.booking_id
+                WHERE p.status='APPROVED'
+                    AND p.created_at >= :fromDate AND p.created_at <= :toDate
+                GROUP BY YEAR(p.created_at), MONTH(p.created_at)
+                ORDER BY yr ASC, mth ASC
+                """, nativeQuery = true)
+        List<Object[]> findApprovedMonthlyRevenueRange(@Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);
 }
