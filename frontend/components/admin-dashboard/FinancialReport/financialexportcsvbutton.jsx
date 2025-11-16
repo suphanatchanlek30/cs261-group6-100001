@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState } from "react";
-// ตรวจสอบ path นี้ให้ถูกต้อง
 import { getMonthlyRevenueReport } from "../../../services/adminReport";
 
 const ExportCsvButton = () => {
@@ -41,13 +40,6 @@ const ExportCsvButton = () => {
       onClick={handleExport}
       disabled={isExporting}
     >
-      {/* นี่คือโค้ด SVG สำหรับไอคอนดาวน์โหลดแบบใหม่
-          - viewBox="0 0 24 24"
-          - fill="none"
-          - stroke="currentColor" เพื่อให้สีตาม text
-          - strokeWidth="1.5" เพื่อให้เส้นบางลงและดูโมเดิร์นขึ้นตามรูป
-          - className="h-[18px] w-[18px]" ขนาดไอคอน
-      */}
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
